@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  MEMBER
+  ADMIN
+  PHOTOGRAPHER
+}
+
+enum Gender {
+  IKHWAN
+  AKHWAT
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  LANJUT
+  SL
+  TIDAK_LANJUT
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  role          Role      @default(MEMBER)
+  profile       Profile?
+  attendees     EventAttendee[]
+  sentRequests  TaarufRequest[] @relation("Sender")
+  receivedRequests TaarufRequest[] @relation("Receiver")
+}
+
+model Profile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id])
+  namaLengkap       String
+  tanggalLahir      DateTime
+  jenisKelamin      Gender
+  asalDaerah        String
+  asalKelompok      String
+  asalDesa          String
+  fotoProfil        String?
+  nomorHp           String
+  instagram         String
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  namaSesi     String
+  isActive     Boolean  @default(true)
+  events       Event[]
+  requests     TaarufRequest[]
+}
+
+model Event {
+  id              String   @id @default(cuid())
+  title           String
+  slug            String   @unique
+  date            DateTime
+  location        String
+  isActive        Boolean  @default(true)
+  isPhotoBlurred  Boolean  @default(true)
+
+  sessionId       String
+  session         Session  @relation(fields: [sessionId], references: [id])
+  attendees       EventAttendee[]
+}
+
+model EventAttendee {
+  id                String   @id @default(cuid())
+  eventId           String
+  userId            String
+  participantNumber String?
+  isVerified        Boolean  @default(false)
+
+  event             Event    @relation(fields: [eventId], references: [id])
+  user              User     @relation(fields: [userId], references: [id])
+
+  @@unique([eventId, userId])
+  @@unique([eventId, participantNumber])
+}
+
+model TaarufRequest {
+  id           String        @id @default(cuid())
+  senderId     String
+  receiverId   String
+  sessionId    String
+  status       RequestStatus @default(PENDING)
+  tableNumber  Int?
+
+  sender       User          @relation("Sender", fields: [senderId], references: [id])
+  receiver     User          @relation("Receiver", fields: [receiverId], references: [id])
+  session      Session       @relation(fields: [sessionId], references: [id])
+}

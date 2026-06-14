@@ -1,0 +1,218 @@
+import { createClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Search, UserPlus } from "lucide-react";
+import { genderLabel, photoUrl } from "@/lib/utils";
+import { ActionForm } from "@/components/admin-panel/action-form";
+import { SubmitButton } from "@/components/admin-panel/submit-button";
+import { type ActionResult } from "@/lib/action-result";
+
+interface MembersPageProps {
+  searchParams: { q?: string };
+}
+
+function calculateAge(dob: string | null) {
+  if (!dob) return "-";
+  const diff = Date.now() - new Date(dob).getTime();
+  return Math.abs(new Date(diff).getUTCFullYear() - 1970);
+}
+
+export default async function AdminMembersPage({ searchParams }: MembersPageProps) {
+  const supabase = createClient();
+  const q = searchParams.q || "";
+
+  let query = supabase.from("Profile").select("*").order("namaLengkap", { ascending: true });
+  if (q) query = query.ilike("namaLengkap", `%${q}%`);
+
+  const [{ data: profiles }, { data: daerahList }, { data: desaList }, { data: kelompokList }] =
+    await Promise.all([
+      query,
+      supabase.from("Daerah").select("nama").order("nama"),
+      supabase.from("Desa").select("nama").order("nama"),
+      supabase.from("Kelompok").select("nama").order("nama"),
+    ]);
+
+  // Server Action: daftarkan member baru (tanpa terikat event)
+  async function registerMember(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+    "use server";
+    const supabase = createClient();
+
+    const namaLengkap = (formData.get("namaLengkap") as string)?.trim();
+    const jenisKelamin = formData.get("jenisKelamin") as string;
+    const tanggalLahir = formData.get("tanggalLahir") as string;
+    const asalDaerah = (formData.get("asalDaerah") as string)?.trim();
+    const asalKelompok = (formData.get("asalKelompok") as string)?.trim();
+    const asalDesa = (formData.get("asalDesa") as string)?.trim();
+    const nomorHp = (formData.get("nomorHp") as string)?.trim();
+    const instagram = (formData.get("instagram") as string)?.trim() || "";
+
+    if (!namaLengkap || !jenisKelamin || !tanggalLahir || !nomorHp) {
+      return { ok: false, message: "Nama, gender, tanggal lahir, dan No. HP wajib diisi." };
+    }
+
+    const placeholderEmail = `member+${Date.now()}${Math.floor(Math.random() * 1000)}@offline.local`;
+    const { data: newUser, error: userErr } = await supabase
+      .from("User")
+      .insert({ email: placeholderEmail, name: namaLengkap, role: "MEMBER" })
+      .select("id")
+      .single();
+
+    if (userErr || !newUser) return { ok: false, message: `Gagal buat user: ${userErr?.message}` };
+
+    const { error: profileErr } = await supabase.from("Profile").insert({
+      userId: newUser.id,
+      namaLengkap,
+      jenisKelamin,
+      tanggalLahir: new Date(tanggalLahir).toISOString(),
+      asalDaerah: asalDaerah || "-",
+      asalKelompok: asalKelompok || "-",
+      asalDesa: asalDesa || "-",
+      nomorHp,
+      instagram,
+    });
+
+    if (profileErr) return { ok: false, message: `Gagal buat profil: ${profileErr.message}` };
+
+    revalidatePath("/admin/members");
+    return { ok: true, message: `Member "${namaLengkap}" berhasil didaftarkan.` };
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Data Member</h2>
+          <p className="text-muted-foreground">Daftar member yang bisa diikutkan ke banyak event.</p>
+        </div>
+        <form className="relative w-full md:w-72">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input name="q" placeholder="Cari nama member..." defaultValue={q} className="pl-9" />
+        </form>
+      </div>
+
+      {/* Daftarkan member baru */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Daftarkan Member Baru</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ActionForm action={registerMember} resetOnSuccess className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Nama Lengkap *</label>
+              <Input name="namaLengkap" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Jenis Kelamin *</label>
+              <select name="jenisKelamin" required className="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                <option value="">Pilih...</option>
+                <option value="IKHWAN">Laki-Laki</option>
+                <option value="AKHWAT">Perempuan</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Tanggal Lahir *</label>
+              <Input name="tanggalLahir" type="date" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Asal Daerah</label>
+              <select name="asalDaerah" className="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                <option value="">Pilih daerah...</option>
+                {daerahList?.map((d: any) => <option key={d.nama} value={d.nama}>{d.nama}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Asal Desa</label>
+              <select name="asalDesa" className="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                <option value="">Pilih desa...</option>
+                {desaList?.map((d: any) => <option key={d.nama} value={d.nama}>{d.nama}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Asal Kelompok</label>
+              <select name="asalKelompok" className="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                <option value="">Pilih kelompok...</option>
+                {kelompokList?.map((d: any) => <option key={d.nama} value={d.nama}>{d.nama}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">No. HP *</label>
+              <Input name="nomorHp" type="tel" required />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Instagram</label>
+              <Input name="instagram" placeholder="tanpa @" />
+            </div>
+            <div className="flex items-end">
+              <SubmitButton pendingText="Mendaftarkan..." className="w-full">
+                <UserPlus className="mr-2 h-4 w-4" /> Daftarkan Member
+              </SubmitButton>
+            </div>
+          </ActionForm>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{profiles?.length || 0} Member</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="px-6 py-3 font-medium">Member</th>
+                  <th className="px-6 py-3 font-medium">Jenis Kelamin</th>
+                  <th className="px-6 py-3 font-medium">Usia</th>
+                  <th className="px-6 py-3 font-medium">Asal Daerah</th>
+                  <th className="px-6 py-3 font-medium">Kelompok / Desa</th>
+                  <th className="px-6 py-3 font-medium">Kontak</th>
+                </tr>
+              </thead>
+              <tbody>
+                {profiles?.map((p) => (
+                  <tr key={p.id} className="border-b transition-colors hover:bg-muted/50">
+                    <td className="px-6 py-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-9 w-9">
+                          {photoUrl(p.fotoProfil) && <AvatarImage src={photoUrl(p.fotoProfil)!} alt={p.namaLengkap} />}
+                          <AvatarFallback className="text-xs">
+                            {p.namaLengkap?.slice(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium">{p.namaLengkap}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-3">
+                      <Badge variant={p.jenisKelamin === "IKHWAN" ? "default" : "secondary"}>
+                        {genderLabel(p.jenisKelamin)}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-3">{calculateAge(p.tanggalLahir)} thn</td>
+                    <td className="px-6 py-3">{p.asalDaerah}</td>
+                    <td className="px-6 py-3 text-muted-foreground">{p.asalKelompok} / {p.asalDesa}</td>
+                    <td className="px-6 py-3 text-muted-foreground">
+                      <div className="flex flex-col">
+                        <span>{p.nomorHp}</span>
+                        <span className="text-xs">@{p.instagram}</span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {(!profiles || profiles.length === 0) && (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
+                      Belum ada member terdaftar.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
