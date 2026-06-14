@@ -17,6 +17,20 @@ export async function updateProfile(_prev: ActionResult, formData: FormData): Pr
   const nomorHp = (formData.get("nomorHp") as string)?.trim();
   const instagram = (formData.get("instagram") as string)?.trim();
 
+  // New fields
+  const statusMubaligh = formData.get("statusMubaligh") as string;
+  const pendidikanTerakhir = formData.get("pendidikanTerakhir") as string;
+  const statusPernikahan = formData.get("statusPernikahan") as string;
+  const pekerjaan = formData.get("pekerjaan") as string;
+  const anakKe = formData.get("anakKe") as string;
+  const jumlahSaudara = formData.get("jumlahSaudara") as string;
+  const dapukanKelompok = formData.get("dapukanKelompok") as string;
+  const dapukanDesa = formData.get("dapukanDesa") as string;
+  const dapukanDaerah = formData.get("dapukanDaerah") as string;
+  const kondisiIbu = formData.get("kondisiIbu") as string;
+  const kondisiAyah = formData.get("kondisiAyah") as string;
+  const statusJamaahIbu = formData.get("statusJamaahIbu") as string;
+
   if (!namaLengkap || !tanggalLahir || !nomorHp) {
     return { ok: false, message: "Nama, Tanggal Lahir, dan No. HP wajib diisi." };
   }
@@ -30,7 +44,19 @@ export async function updateProfile(_prev: ActionResult, formData: FormData): Pr
       asalKelompok,
       asalDesa,
       nomorHp,
-      instagram
+      instagram,
+      statusMubaligh,
+      pendidikanTerakhir,
+      statusPernikahan,
+      pekerjaan,
+      anakKe: anakKe ? parseInt(anakKe) : null,
+      jumlahSaudara: jumlahSaudara ? parseInt(jumlahSaudara) : null,
+      dapukanKelompok,
+      dapukanDesa,
+      dapukanDaerah,
+      kondisiIbu,
+      kondisiAyah,
+      statusJamaahIbu
     })
     .eq("userId", user.id);
 

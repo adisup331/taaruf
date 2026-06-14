@@ -18,7 +18,20 @@ export async function POST(request: Request) {
       asalDesa,
       nomorHp,
       instagram,
-      fotoProfil
+      fotoProfil,
+      statusMubaligh,
+      pendidikanTerakhir,
+      statusPernikahan,
+      pekerjaan,
+      anakKe,
+      jumlahSaudara,
+      dapukanKelompok,
+      dapukanDesa,
+      dapukanDaerah,
+      kondisiIbu,
+      kondisiAyah,
+      statusJamaahIbu,
+      statusJamaahAyah
     } = body
 
     // 1. Get or Create User via Supabase Client
@@ -53,22 +66,35 @@ export async function POST(request: Request) {
 
     let profileData;
 
+    const payload = {
+      namaLengkap,
+      tanggalLahir: new Date(tanggalLahir).toISOString(),
+      jenisKelamin,
+      asalDaerah,
+      asalKelompok,
+      asalDesa,
+      nomorHp,
+      instagram,
+      statusMubaligh,
+      pendidikanTerakhir,
+      statusPernikahan,
+      pekerjaan,
+      anakKe: anakKe ? parseInt(anakKe) : null,
+      jumlahSaudara: jumlahSaudara ? parseInt(jumlahSaudara) : null,
+      dapukanKelompok,
+      dapukanDesa,
+      dapukanDaerah,
+      kondisiIbu,
+      kondisiAyah,
+      statusJamaahIbu,
+      statusJamaahAyah,
+      ...(fotoProfil && { fotoProfil })
+    }
+
     if (existingProfile) {
-       // Cek apakah ini profil placeholder yang diklaim (email @offline.local atau @member.local tanpa biodata)
-       // Update saja data yang dikirim member
        const { data: updatedProfile, error: upErr } = await supabase
          .from('Profile')
-         .update({
-            namaLengkap,
-            tanggalLahir: new Date(tanggalLahir).toISOString(),
-            jenisKelamin,
-            asalDaerah,
-            asalKelompok,
-            asalDesa,
-            nomorHp,
-            instagram,
-            ...(fotoProfil && { fotoProfil })
-         })
+         .update(payload)
          .eq('userId', userId)
          .select()
          .single()
@@ -78,20 +104,11 @@ export async function POST(request: Request) {
     } else {
        const { data: newProfile, error: insErr } = await supabase
          .from('Profile')
-         .insert({
-            userId,
-            namaLengkap,
-            tanggalLahir: new Date(tanggalLahir).toISOString(),
-            jenisKelamin,
-            asalDaerah,
-            asalKelompok,
-            asalDesa,
-            nomorHp,
-            instagram,
-            fotoProfil
-         })
+         .insert({ userId, ...payload })
          .select()
          .single()
+
+       if (insErr) throw insErr;
        profileData = newProfile;
     }
 

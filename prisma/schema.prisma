@@ -51,6 +51,21 @@ model Profile {
   fotoProfil        String?
   nomorHp           String
   instagram         String
+
+  // New Fields
+  statusMubaligh    String?  // Mubaligh / Non Mubaligh
+  pendidikanTerakhir String?
+  statusPernikahan  String?  @default("Lajang")
+  pekerjaan         String?
+  anakKe            Int?
+  jumlahSaudara     Int?
+  dapukanKelompok   String?
+  dapukanDesa       String?
+  dapukanDaerah     String?
+  kondisiIbu        String?  // Hidup / Almarhum
+  kondisiAyah       String?  // Hidup / Almarhum
+  statusJamaahIbu   String?  // Sudah Jamaah / Belum Jamaah
+  statusJamaahAyah  String?  // Sudah Jamaah / Belum Jamaah
 }
 
 model Session {
