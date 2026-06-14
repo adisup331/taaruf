@@ -119,12 +119,21 @@ export function ProfileView({ profile }: { profile: any }) {
                 </select>
               </div>
             </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Status Jamaah Ibu</label>
-              <select name="statusJamaahIbu" defaultValue={profile.statusJamaahIbu || "Sudah Jamaah"} className="flex h-10 w-full rounded-xl border border-gray-100 bg-background px-3 py-2 text-sm">
-                <option value="Sudah Jamaah">Sudah Jamaah</option>
-                <option value="Belum Jamaah">Belum Jamaah</option>
-              </select>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Status Jamaah Ibu</label>
+                <select name="statusJamaahIbu" defaultValue={profile.statusJamaahIbu || "Sudah Jamaah"} className="flex h-10 w-full rounded-xl border border-gray-100 bg-background px-3 py-2 text-sm">
+                  <option value="Sudah Jamaah">Sudah Jamaah</option>
+                  <option value="Belum Jamaah">Belum Jamaah</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Status Jamaah Bapak</label>
+                <select name="statusJamaahAyah" defaultValue={profile.statusJamaahAyah || "Sudah Jamaah"} className="flex h-10 w-full rounded-xl border border-gray-100 bg-background px-3 py-2 text-sm">
+                  <option value="Sudah Jamaah">Sudah Jamaah</option>
+                  <option value="Belum Jamaah">Belum Jamaah</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -206,7 +215,7 @@ export function ProfileView({ profile }: { profile: any }) {
               </div>
               <div className="space-y-1">
                  <p className="text-[10px] font-bold text-gray-400 uppercase">Bapak</p>
-                 <p className="text-sm font-bold text-gray-700">{profile.kondisiAyah || "-"}</p>
+                 <p className="text-sm font-bold text-gray-700">{profile.kondisiAyah || "-"} ({profile.statusJamaahAyah})</p>
               </div>
            </div>
         </div>

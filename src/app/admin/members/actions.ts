@@ -4,12 +4,12 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { type ActionResult } from "@/lib/action-result";
 
-export async function updateProfile(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+export async function adminUpdateMember(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { ok: false, message: "Unauthorized" };
 
+  const userId = formData.get("userId") as string;
   const namaLengkap = (formData.get("namaLengkap") as string)?.trim();
+  const jenisKelamin = formData.get("jenisKelamin") as string;
   const tanggalLahir = formData.get("tanggalLahir") as string;
   const asalDaerah = (formData.get("asalDaerah") as string)?.trim();
   const asalKelompok = (formData.get("asalKelompok") as string)?.trim();
@@ -32,14 +32,15 @@ export async function updateProfile(_prev: ActionResult, formData: FormData): Pr
   const statusJamaahIbu = formData.get("statusJamaahIbu") as string;
   const statusJamaahAyah = formData.get("statusJamaahAyah") as string;
 
-  if (!namaLengkap || !tanggalLahir || !nomorHp) {
-    return { ok: false, message: "Nama, Tanggal Lahir, dan No. HP wajib diisi." };
+  if (!userId || !namaLengkap || !jenisKelamin || !tanggalLahir) {
+    return { ok: false, message: "Field wajib belum terisi." };
   }
 
   const { error } = await supabase
     .from("Profile")
     .update({
       namaLengkap,
+      jenisKelamin,
       tanggalLahir: new Date(tanggalLahir).toISOString(),
       asalDaerah,
       asalKelompok,
@@ -60,10 +61,10 @@ export async function updateProfile(_prev: ActionResult, formData: FormData): Pr
       statusJamaahIbu,
       statusJamaahAyah
     })
-    .eq("userId", user.id);
+    .eq("userId", userId);
 
-  if (error) return { ok: false, message: `Gagal simpan: ${error.message}` };
+  if (error) return { ok: false, message: `Gagal update: ${error.message}` };
 
-  revalidatePath("/profil");
-  return { ok: true, message: "Profil berhasil diperbarui!" };
+  revalidatePath("/admin/members");
+  return { ok: true, message: `Data "${namaLengkap}" berhasil diperbarui.` };
 }

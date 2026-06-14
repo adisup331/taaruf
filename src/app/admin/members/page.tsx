@@ -9,6 +9,7 @@ import { genderLabel, photoUrl } from "@/lib/utils";
 import { ActionForm } from "@/components/admin-panel/action-form";
 import { SubmitButton } from "@/components/admin-panel/submit-button";
 import { type ActionResult } from "@/lib/action-result";
+import { EditMemberDialog } from "./edit-dialog";
 
 interface MembersPageProps {
   searchParams: { q?: string };
@@ -168,7 +169,7 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
                   <th className="px-6 py-3 font-medium">Usia</th>
                   <th className="px-6 py-3 font-medium">Asal Daerah</th>
                   <th className="px-6 py-3 font-medium">Kelompok / Desa</th>
-                  <th className="px-6 py-3 font-medium">Kontak</th>
+                  <th className="px-6 py-3 font-medium text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -193,11 +194,8 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
                     <td className="px-6 py-3">{calculateAge(p.tanggalLahir)} thn</td>
                     <td className="px-6 py-3">{p.asalDaerah}</td>
                     <td className="px-6 py-3 text-muted-foreground">{p.asalKelompok} / {p.asalDesa}</td>
-                    <td className="px-6 py-3 text-muted-foreground">
-                      <div className="flex flex-col">
-                        <span>{p.nomorHp}</span>
-                        <span className="text-xs">@{p.instagram}</span>
-                      </div>
+                    <td className="px-6 py-3 text-right">
+                       <EditMemberDialog profile={p} />
                     </td>
                   </tr>
                 ))}
