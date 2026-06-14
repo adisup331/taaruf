@@ -7,6 +7,8 @@ import { useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 
+export const dynamic = "force-dynamic";
+
 function LoginForm() {
   const supabase = createClient()
   const router = useRouter()

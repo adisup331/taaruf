@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/supabase/client"
 
+export const dynamic = "force-dynamic";
+
 function RegisterProfileForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
