@@ -51,7 +51,7 @@ export async function POST(request: Request) {
 
     const { data: updated, error: updateError } = await supabase
       .from("Profile")
-      .update({ fotoProfil: versionedUrl })
+      .update({ fotoEvent: versionedUrl }) // Update kolom fotoEvent khusus studio
       .eq("id", profileId)
       .select("id")
 

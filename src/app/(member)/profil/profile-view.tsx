@@ -143,6 +143,10 @@ export function ProfileView({ profile }: { profile: any }) {
               <Input name="nomorHp" defaultValue={profile.nomorHp} required placeholder="WhatsApp" className="rounded-xl border-gray-100" />
               <Input name="instagram" defaultValue={profile.instagram} placeholder="Instagram" className="rounded-xl border-gray-100" />
             </div>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Update Foto Profil Utama</label>
+              <Input name="fotoProfil" type="file" accept="image/*" className="rounded-xl border-gray-100" />
+            </div>
           </div>
 
           <div className="pt-6">

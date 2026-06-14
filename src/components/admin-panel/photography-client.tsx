@@ -146,15 +146,30 @@ export function PhotographyClient({
               </div>
 
               {/* Foto saat ini */}
-              <div className="relative mx-auto h-64 w-52 overflow-hidden rounded-xl border-4 border-white shadow-xl bg-muted">
-                {photoUrl(profile.fotoProfil) ? (
-                  <Image src={photoUrl(profile.fotoProfil)!} fill unoptimized className="object-cover" alt="Current" />
-                ) : (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground">
-                    <Camera className="h-12 w-12 mb-2 opacity-20" />
-                    <span className="text-xs">Belum ada foto</span>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <p className="text-[10px] font-bold uppercase text-muted-foreground">Foto Profil</p>
+                  <div className="relative h-48 w-full overflow-hidden rounded-xl border-2 border-white shadow-md bg-muted">
+                    {photoUrl(profile.fotoProfil) ? (
+                      <Image src={photoUrl(profile.fotoProfil)!} fill unoptimized className="object-cover" alt="Current Profil" />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center text-muted-foreground opacity-20"><Camera className="h-8 w-8" /></div>
+                    )}
                   </div>
-                )}
+                </div>
+                <div className="space-y-2">
+                  <p className="text-[10px] font-bold uppercase text-emerald-600">Foto Studio Event</p>
+                  <div className="relative h-48 w-full overflow-hidden rounded-xl border-2 border-emerald-100 shadow-md bg-emerald-50/30">
+                    {photoUrl(profile.fotoEvent) ? (
+                      <Image src={photoUrl(profile.fotoEvent)!} fill unoptimized className="object-cover" alt="Current Event" />
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-emerald-600/30">
+                        <Camera className="h-8 w-8 mb-1" />
+                        <span className="text-[10px] font-bold">BELUM ADA</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

@@ -19,7 +19,7 @@ export default async function OnsitePhotographyPage({ searchParams }: Photograph
   if (queryNum && eventId) {
     const { data } = await supabase
       .from("EventAttendee")
-      .select("id, participantNumber, User ( Profile ( id, namaLengkap, fotoProfil, asalDaerah, asalKelompok, asalDesa, jenisKelamin ) )")
+      .select("id, participantNumber, User ( Profile ( id, namaLengkap, fotoProfil, fotoEvent, asalDaerah, asalKelompok, asalDesa, jenisKelamin ) )")
       .eq("eventId", eventId)
       .eq("participantNumber", queryNum)
       .maybeSingle();

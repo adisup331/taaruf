@@ -49,6 +49,7 @@ model Profile {
   asalKelompok      String
   asalDesa          String
   fotoProfil        String?
+  fotoEvent         String?
   nomorHp           String
   instagram         String
 

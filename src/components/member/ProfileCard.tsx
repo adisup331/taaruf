@@ -68,14 +68,32 @@ export function ProfileCard({ profile, eventId, isEventBlurActive, targetUserId,
           </div>
         </DialogTrigger>
 
-        {!isEventBlurActive && profile.fotoProfil && (
+        {!isEventBlurActive && (profile.fotoProfil || profile.fotoEvent) && (
           <DialogContent className="max-w-[95vw] h-[90vh] p-0 overflow-hidden bg-black border-none sm:rounded-[3rem]">
-             <div className="relative w-full h-full flex items-center justify-center">
-                <img
-                  src={photoUrl(profile.fotoProfil)!}
-                  alt="Full Preview"
-                  className="max-w-full max-h-full object-contain"
-                />
+             <div className="relative w-full h-full flex flex-col items-center justify-center p-4">
+                <div className="flex gap-4 w-full h-full overflow-x-auto snap-x snap-mandatory pb-4">
+                   {profile.fotoProfil && (
+                     <div className="min-w-full h-full relative snap-center flex flex-col items-center">
+                        <img
+                          src={photoUrl(profile.fotoProfil)!}
+                          alt="Foto Profil"
+                          className="max-w-full max-h-[80%] object-contain rounded-2xl"
+                        />
+                        <p className="text-white mt-4 font-black uppercase tracking-widest text-xs bg-white/10 px-4 py-2 rounded-full">Foto Utama</p>
+                     </div>
+                   )}
+                   {profile.fotoEvent && (
+                     <div className="min-w-full h-full relative snap-center flex flex-col items-center">
+                        <img
+                          src={photoUrl(profile.fotoEvent)!}
+                          alt="Foto Event"
+                          className="max-w-full max-h-[80%] object-contain rounded-2xl"
+                        />
+                        <p className="text-emerald-400 mt-4 font-black uppercase tracking-widest text-xs bg-emerald-400/10 px-4 py-2 rounded-full border border-emerald-400/20">Foto Studio Event</p>
+                     </div>
+                   )}
+                </div>
+                <p className="text-gray-500 text-[10px] font-bold uppercase mt-2">← Geser untuk lihat foto lainnya →</p>
              </div>
           </DialogContent>
         )}

@@ -10,6 +10,7 @@ export async function updateProfile(_prev: ActionResult, formData: FormData): Pr
   if (!user) return { ok: false, message: "Unauthorized" };
 
   const namaLengkap = (formData.get("namaLengkap") as string)?.trim();
+  const jenisKelamin = formData.get("jenisKelamin") as string;
   const tanggalLahir = formData.get("tanggalLahir") as string;
   const asalDaerah = (formData.get("asalDaerah") as string)?.trim();
   const asalKelompok = (formData.get("asalKelompok") as string)?.trim();
@@ -31,15 +32,35 @@ export async function updateProfile(_prev: ActionResult, formData: FormData): Pr
   const kondisiAyah = formData.get("kondisiAyah") as string;
   const statusJamaahIbu = formData.get("statusJamaahIbu") as string;
   const statusJamaahAyah = formData.get("statusJamaahAyah") as string;
+  const fotoProfilFile = formData.get("fotoProfil") as File;
 
   if (!namaLengkap || !tanggalLahir || !nomorHp) {
     return { ok: false, message: "Nama, Tanggal Lahir, dan No. HP wajib diisi." };
+  }
+
+  let fotoProfilUrl = undefined;
+  if (fotoProfilFile && fotoProfilFile.size > 0) {
+    const fileExt = fotoProfilFile.name.split('.').pop();
+    const fileName = `member-${user.id}-${Date.now()}.${fileExt}`;
+    const path = `profiles/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("pnkb")
+      .upload(path, fotoProfilFile, { upsert: true, contentType: fotoProfilFile.type });
+
+    if (uploadError) {
+      return { ok: false, message: `Gagal upload foto: ${uploadError.message}` };
+    }
+
+    const { data: pub } = supabase.storage.from("pnkb").getPublicUrl(path);
+    fotoProfilUrl = `${pub.publicUrl}?v=${Date.now()}`;
   }
 
   const { error } = await supabase
     .from("Profile")
     .update({
       namaLengkap,
+      jenisKelamin: jenisKelamin as any,
       tanggalLahir: new Date(tanggalLahir).toISOString(),
       asalDaerah,
       asalKelompok,
@@ -58,7 +79,8 @@ export async function updateProfile(_prev: ActionResult, formData: FormData): Pr
       kondisiIbu,
       kondisiAyah,
       statusJamaahIbu,
-      statusJamaahAyah
+      statusJamaahAyah,
+      ...(fotoProfilUrl && { fotoProfil: fotoProfilUrl })
     })
     .eq("userId", user.id);
 
