@@ -83,6 +83,10 @@ function NavContent({ collapsed }: { collapsed: boolean }) {
           </div>
         ))}
       </nav>
+
+      <div className={cn("p-4 border-t border-sidebar-border text-[10px] text-muted-foreground font-medium", collapsed && "text-center")}>
+        {collapsed ? "v1.0" : "Version 1.0.0"}
+      </div>
     </TooltipProvider>
   )
 }
