@@ -91,6 +91,42 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Cara Kerja Section */}
+        <section id="cara-kerja" className="py-24 overflow-hidden">
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl lg:text-4xl font-black text-emerald-950">Cara Kerja TaarufYuk</h2>
+              <p className="mt-4 text-gray-500 max-w-xl mx-auto">Proses yang simpel, sistematis, dan tetap menjaga adab kesopanan.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-12 relative">
+              {/* Connector line for desktop */}
+              <div className="hidden md:block absolute top-12 left-0 w-full h-0.5 bg-emerald-100 -z-10" />
+
+              <StepCard
+                number="1"
+                title="Daftar Akun"
+                description="Lengkapi biodata lengkap dan unggah foto profil terbaikmu."
+              />
+              <StepCard
+                number="2"
+                title="Scan QR Event"
+                description="Datang ke lokasi acara dan scan QR panitia untuk masuk antrean."
+              />
+              <StepCard
+                number="3"
+                title="Klik 'Lancarkan'"
+                description="Lihat profil lawan jenis dan ajukan niat taaruf secara digital."
+              />
+              <StepCard
+                number="4"
+                title="Duduk di Meja"
+                description="Admin atur meja, kamu bisa bertemu langsung didampingi panitia."
+              />
+            </div>
+          </div>
+        </section>
+
         {/* Call to Action */}
         <section className="py-24 bg-emerald-900">
           <div className="container mx-auto px-4 text-center">
@@ -140,6 +176,18 @@ function FeatureCard({ icon, title, description }: { icon: React.ReactNode, titl
       </div>
       <h3 className="mt-8 text-xl font-black text-emerald-950">{title}</h3>
       <p className="mt-4 text-gray-500 leading-relaxed">{description}</p>
+    </div>
+  );
+}
+
+function StepCard({ number, title, description }: { number: string, title: string, description: string }) {
+  return (
+    <div className="flex flex-col items-center text-center group">
+      <div className="h-24 w-24 rounded-full bg-white border-4 border-emerald-50 flex items-center justify-center text-3xl font-black text-emerald-600 shadow-xl group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-500 mb-6">
+        {number}
+      </div>
+      <h4 className="text-xl font-black text-emerald-950 mb-2">{title}</h4>
+      <p className="text-sm text-gray-400 px-4 leading-relaxed">{description}</p>
     </div>
   );
 }
