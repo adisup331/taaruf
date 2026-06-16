@@ -64,6 +64,19 @@ export default async function LiveMatchingPage({
     };
   }) || [];
 
+  // Ambil nomor peserta semua attendee event ini → map userId → participantNumber
+  const { data: eventAttendees } = selectedEventId
+    ? await supabase
+        .from("EventAttendee")
+        .select("userId, participantNumber")
+        .eq("eventId", selectedEventId)
+    : { data: [] };
+
+  const participantMap = new Map<string, string>();
+  (eventAttendees || []).forEach((a: any) => {
+    if (a.participantNumber) participantMap.set(a.userId, a.participantNumber);
+  });
+
   // Used tables logic (to prevent duplicate table assignments)
   const usedTables = requests
     .filter(r => r.status === 'APPROVED' && r.tableNumber)
@@ -270,6 +283,8 @@ export default async function LiveMatchingPage({
           const senderProfile = req.senderProfile;
           const receiverProfile = req.receiverProfile;
           const shortId = req.id.slice(-6).toUpperCase();
+          const senderNum = participantMap.get(req.senderId);
+          const receiverNum = participantMap.get(req.receiverId);
 
           return (
             <Card key={req.id} className="overflow-hidden">
@@ -283,6 +298,7 @@ export default async function LiveMatchingPage({
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">PENGIRIM</p>
                   <h4 className="font-bold text-lg">{senderProfile?.namaLengkap || "-"}</h4>
                   <p className="text-sm text-muted-foreground">{senderProfile?.asalKelompok}</p>
+                  {senderNum && <Badge variant="outline" className="mt-1 text-[10px]">No. {senderNum}</Badge>}
                 </div>
 
                 <div className="flex flex-col items-center gap-1">
@@ -297,6 +313,7 @@ export default async function LiveMatchingPage({
                   <p className="text-xs font-medium text-muted-foreground">PENERIMA</p>
                   <h4 className="font-semibold">{receiverProfile?.namaLengkap || "-"}</h4>
                   <p className="text-sm text-muted-foreground">{receiverProfile?.asalKelompok}</p>
+                  {receiverNum && <Badge variant="outline" className="mt-1 text-[10px]">No. {receiverNum}</Badge>}
                 </div>
 
                 <div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-3">

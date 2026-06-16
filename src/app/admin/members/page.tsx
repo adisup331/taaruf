@@ -11,6 +11,7 @@ import { SubmitButton } from "@/components/admin-panel/submit-button";
 import { type ActionResult } from "@/lib/action-result";
 import { EditMemberDialog } from "./edit-dialog";
 import { AddToEventButton } from "./add-to-event";
+import { DeleteConfirmButton } from "@/components/admin-panel/delete-confirm-button";
 
 interface MembersPageProps {
   searchParams: { q?: string };
@@ -81,6 +82,21 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
 
     revalidatePath("/admin/members");
     return { ok: true, message: `Member "${namaLengkap}" berhasil didaftarkan.` };
+  }
+
+  async function deleteMember(userId: string): Promise<ActionResult> {
+    "use server";
+    const supabase = createClient();
+
+    // Hapus data terkait: TaarufRequest, EventAttendee, Profile, lalu User
+    await supabase.from("TaarufRequest").delete().or(`senderId.eq.${userId},receiverId.eq.${userId}`);
+    await supabase.from("EventAttendee").delete().eq("userId", userId);
+    await supabase.from("Profile").delete().eq("userId", userId);
+    const { error } = await supabase.from("User").delete().eq("id", userId);
+
+    if (error) return { ok: false, message: `Gagal hapus: ${error.message}` };
+    revalidatePath("/admin/members");
+    return { ok: true, message: "Member berhasil dihapus." };
   }
 
   return (
@@ -200,6 +216,11 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
                        <div className="flex items-center justify-end gap-1">
                          <AddToEventButton userId={p.userId} events={activeEvents || []} />
                          <EditMemberDialog profile={p} />
+                         <DeleteConfirmButton
+                           title="Hapus Member?"
+                           description={`Hapus "${p.namaLengkap}" beserta semua data taaruf & kehadiran event-nya. Aksi ini tidak bisa dibatalkan.`}
+                           action={deleteMember.bind(null, p.userId)}
+                         />
                        </div>
                     </td>
                   </tr>
