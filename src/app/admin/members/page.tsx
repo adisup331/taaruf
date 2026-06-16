@@ -10,6 +10,7 @@ import { ActionForm } from "@/components/admin-panel/action-form";
 import { SubmitButton } from "@/components/admin-panel/submit-button";
 import { type ActionResult } from "@/lib/action-result";
 import { EditMemberDialog } from "./edit-dialog";
+import { AddToEventButton } from "./add-to-event";
 
 interface MembersPageProps {
   searchParams: { q?: string };
@@ -28,12 +29,13 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
   let query = supabase.from("Profile").select("*").order("namaLengkap", { ascending: true });
   if (q) query = query.ilike("namaLengkap", `%${q}%`);
 
-  const [{ data: profiles }, { data: daerahList }, { data: desaList }, { data: kelompokList }] =
+  const [{ data: profiles }, { data: daerahList }, { data: desaList }, { data: kelompokList }, { data: activeEvents }] =
     await Promise.all([
       query,
       supabase.from("Daerah").select("nama").order("nama"),
       supabase.from("Desa").select("nama").order("nama"),
       supabase.from("Kelompok").select("nama").order("nama"),
+      supabase.from("Event").select("id, title").eq("isActive", true).order("date", { ascending: false }),
     ]);
 
   // Server Action: daftarkan member baru (tanpa terikat event)
@@ -191,11 +193,14 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
                         {genderLabel(p.jenisKelamin)}
                       </Badge>
                     </td>
-                    <td className="px-6 py-3">{calculateAge(p.tanggalLahir)} thn</td>
+                    <td className="px-6 py-3">{calculateAge(p.tanggalLahir)} Tahun</td>
                     <td className="px-6 py-3">{p.asalDaerah}</td>
                     <td className="px-6 py-3 text-muted-foreground">{p.asalKelompok} / {p.asalDesa}</td>
                     <td className="px-6 py-3 text-right">
-                       <EditMemberDialog profile={p} />
+                       <div className="flex items-center justify-end gap-1">
+                         <AddToEventButton userId={p.userId} events={activeEvents || []} />
+                         <EditMemberDialog profile={p} />
+                       </div>
                     </td>
                   </tr>
                 ))}

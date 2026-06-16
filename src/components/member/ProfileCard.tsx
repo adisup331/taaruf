@@ -81,7 +81,7 @@ export function ProfileCard({ profile, eventId, isEventBlurActive, targetUserId,
             )}
 
             <div className="absolute bottom-6 left-6 text-white pointer-events-none">
-               <h2 className="text-3xl font-black">{profile.namaLengkap}, {age}</h2>
+               <h2 className="text-3xl font-black">{profile.namaLengkap}, {age} Thn</h2>
                <p className="text-emerald-300 font-bold tracking-wide">{profile.asalDaerah}</p>
             </div>
 
@@ -134,7 +134,7 @@ export function ProfileCard({ profile, eventId, isEventBlurActive, targetUserId,
           <div className="p-6 space-y-5">
             {/* Nama & Umur */}
             <div>
-              <h2 className="text-2xl font-black text-gray-900">{profile.namaLengkap}, {age}</h2>
+              <h2 className="text-2xl font-black text-gray-900">{profile.namaLengkap}, {age} Thn</h2>
               <p className="text-emerald-600 font-bold">{profile.asalDaerah}</p>
             </div>
 

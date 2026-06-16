@@ -15,6 +15,7 @@ import { SubmitButton } from "@/components/admin-panel/submit-button";
 import { type ActionResult } from "@/lib/action-result";
 import { genderLabel, photoUrl } from "@/lib/utils";
 import { nextParticipantNumber } from "@/lib/participant";
+import { AddMembersForm } from "./add-members";
 
 export default async function EventDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
@@ -272,26 +273,9 @@ export default async function EventDetailPage({ params }: { params: { id: string
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Tambah member yang sudah terdaftar di Data Member */}
+          {/* Tambah member (checkbox multiple) */}
           {availableMembers.length > 0 ? (
-            <ActionForm action={addAttendee} resetOnSuccess className="flex flex-wrap items-end gap-2 rounded-lg border bg-muted/30 p-3">
-              <div className="flex-1 space-y-1">
-                <label className="text-xs text-muted-foreground">Tambah Member ke Acara</label>
-                <select name="userId" required className="h-10 w-full rounded-md border bg-background px-3 text-sm">
-                  <option value="">Pilih member...</option>
-                  {availableMembers.map((m: any) => (
-                    <option key={m.userId} value={m.userId}>
-                      {m.namaLengkap} ({genderLabel(m.jenisKelamin)})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">No. Peserta (auto)</label>
-                <Input name="participantNumber" placeholder="otomatis" className="w-28" />
-              </div>
-              <SubmitButton pendingText="Menambah..."><UserPlus className="mr-2 h-4 w-4" /> Tambah</SubmitButton>
-            </ActionForm>
+            <AddMembersForm eventId={params.id} availableMembers={availableMembers} />
           ) : (
             <p className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
               Semua member sudah terdaftar di acara ini. Tambah member baru lewat{" "}
