@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const TABS = [
@@ -10,21 +10,21 @@ const TABS = [
   { key: "all", label: "Semua", statuses: [] },
 ];
 
-export function MatchTabs({ requests, renderCard }: { requests: any[]; renderCard: (req: any) => React.ReactNode }) {
-  const [activeTab, setActiveTab] = useState("active");
+interface MatchTabsProps {
+  counts: Record<string, number>;
+  children: React.ReactNode;
+}
 
-  const currentTab = TABS.find(t => t.key === activeTab)!;
-  const filtered = currentTab.statuses.length > 0
-    ? requests.filter(r => currentTab.statuses.includes(r.status))
-    : requests;
+export function MatchTabs({ counts, children }: MatchTabsProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get("tab") || "active";
 
-  // Hitung per tab
-  const counts: Record<string, number> = {};
-  TABS.forEach(t => {
-    counts[t.key] = t.statuses.length > 0
-      ? requests.filter(r => t.statuses.includes(r.status)).length
-      : requests.length;
-  });
+  function setTab(key: string) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", key);
+    router.push(`?${params.toString()}`, { scroll: false });
+  }
 
   return (
     <div className="space-y-4">
@@ -33,7 +33,8 @@ export function MatchTabs({ requests, renderCard }: { requests: any[]; renderCar
         {TABS.map(tab => (
           <button
             key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
+            type="button"
+            onClick={() => setTab(tab.key)}
             className={cn(
               "flex-1 rounded-md px-3 py-2 text-xs font-bold transition-all",
               activeTab === tab.key
@@ -46,21 +47,14 @@ export function MatchTabs({ requests, renderCard }: { requests: any[]; renderCar
               "ml-1.5 inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold",
               activeTab === tab.key ? "bg-primary text-primary-foreground" : "bg-muted-foreground/20"
             )}>
-              {counts[tab.key]}
+              {counts[tab.key] ?? 0}
             </span>
           </button>
         ))}
       </div>
 
-      {/* Cards */}
-      <div className="grid gap-4">
-        {filtered.map(req => renderCard(req))}
-        {filtered.length === 0 && (
-          <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground bg-muted/20">
-            <p className="font-bold">Tidak ada data di tab ini.</p>
-          </div>
-        )}
-      </div>
+      {/* Cards rendered by server */}
+      {children}
     </div>
   );
 }
