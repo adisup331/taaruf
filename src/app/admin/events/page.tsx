@@ -11,6 +11,9 @@ import { ActionForm } from "@/components/admin-panel/action-form";
 import { SubmitButton } from "@/components/admin-panel/submit-button";
 import { type ActionResult } from "@/lib/action-result";
 
+// Cache 10 detik
+export const revalidate = 10;
+
 export default async function AdminEventsPage() {
   const supabase = createClient();
 

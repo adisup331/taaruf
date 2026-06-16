@@ -2,11 +2,8 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
 /**
- * Proxy foto privat. Hanya pengguna yang sudah login (punya cookie session
- * di domain ini / localhost) yang bisa mengakses. Domain lain yang hotlink
- * tanpa session → 401.
- *
- * Pemakaian: /api/photo?path=profiles/alenovan.jpg
+ * Proxy foto privat dengan caching agresif.
+ * Auth check sekali, gambar di-cache browser 24 jam.
  */
 export async function GET(request: Request) {
   const supabase = createClient()
@@ -20,7 +17,6 @@ export async function GET(request: Request) {
   const rawPath = searchParams.get("path")
   if (!rawPath) return new NextResponse("Missing path", { status: 400 })
 
-  // Buang query cache-buster (?v=) bila ikut terbawa
   const path = rawPath.split("?")[0]
 
   const { data, error } = await supabase.storage.from("pnkb").download(path)
@@ -30,13 +26,16 @@ export async function GET(request: Request) {
   }
 
   const buffer = Buffer.from(await data.arrayBuffer())
+  const contentType = data.type || "image/jpeg"
 
   return new NextResponse(buffer, {
     status: 200,
     headers: {
-      "Content-Type": data.type || "image/jpeg",
-      // private: hanya boleh di-cache browser user, tidak oleh CDN/proxy publik
-      "Cache-Control": "private, max-age=3600",
+      "Content-Type": contentType,
+      // Cache 24 jam di browser + 1 jam stale-while-revalidate
+      "Cache-Control": "private, max-age=86400, stale-while-revalidate=3600",
+      // ETag untuk conditional requests
+      "ETag": `"${Buffer.from(path).toString("base64")}"`,
     },
   })
 }

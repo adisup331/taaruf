@@ -27,7 +27,9 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
   const supabase = createClient();
   const q = searchParams.q || "";
 
-  let query = supabase.from("Profile").select("*").order("namaLengkap", { ascending: true });
+  let query = supabase.from("Profile")
+    .select("id, userId, namaLengkap, jenisKelamin, tanggalLahir, asalDaerah, asalKelompok, asalDesa, nomorHp, instagram, fotoProfil")
+    .order("namaLengkap", { ascending: true });
   if (q) query = query.ilike("namaLengkap", `%${q}%`);
 
   const [{ data: profiles }, { data: daerahList }, { data: desaList }, { data: kelompokList }, { data: activeEvents }] =

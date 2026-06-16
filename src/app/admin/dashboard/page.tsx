@@ -2,6 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Clock, HeartHandshake, CheckCircle2, UserCheck } from "lucide-react";
 
+// Cache 30 detik — dashboard tidak perlu real-time ketat
+export const revalidate = 30;
+
 export default async function AdminDashboard() {
   const supabase = createClient();
 

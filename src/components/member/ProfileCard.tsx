@@ -70,6 +70,8 @@ export function ProfileCard({ profile, eventId, isEventBlurActive, targetUserId,
               fill
               alt="Profile"
               unoptimized
+              loading="lazy"
+              sizes="(max-width: 430px) 100vw, 430px"
             />
 
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />

@@ -11,7 +11,7 @@ export default async function MemberProfilePage() {
 
   const { data: profile } = await supabase
     .from("Profile")
-    .select("*")
+    .select("id, userId, namaLengkap, jenisKelamin, tanggalLahir, asalDaerah, asalKelompok, asalDesa, nomorHp, instagram, statusMubaligh, pendidikanTerakhir, statusPernikahan, pekerjaan, anakKe, jumlahSaudara, dapukanKelompok, dapukanDesa, dapukanDaerah, kondisiIbu, kondisiAyah, statusJamaahIbu, statusJamaahAyah")
     .eq("userId", user.id)
     .maybeSingle();
 
