@@ -1,34 +1,22 @@
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import Link from "next/link";
-import { Printer, ArrowRight, Plus, Search, Trash2 } from "lucide-react";
+import { Printer, ArrowRight, Plus } from "lucide-react";
 import { revalidatePath } from "next/cache";
 import { ActionForm } from "@/components/admin-panel/action-form";
 import { SubmitButton } from "@/components/admin-panel/submit-button";
-import { DeleteConfirmButton } from "@/components/admin-panel/delete-confirm-button";
 import { MatchSearch } from "@/components/admin-panel/match-search";
 import { type ActionResult } from "@/lib/action-result";
-import { statusLabel } from "@/lib/utils";
-import { MatchTabs } from "./match-tabs";
-
-const TAB_STATUSES: Record<string, string[]> = {
-  active: ["PENDING", "APPROVED"],
-  lanjut: ["LANJUT", "SL"],
-  tidak: ["TIDAK_LANJUT"],
-  all: [],
-};
+import { MatchDesk } from "./match-desk";
 
 export default async function LiveMatchingPage({
   searchParams,
 }: {
-  searchParams: { eventId?: string; q?: string; tab?: string };
+  searchParams: { eventId?: string; q?: string };
 }) {
   const supabase = createClient();
   const query = (searchParams.q || "").toLowerCase();
-  const activeTab = searchParams.tab || "active";
 
   // All events for the picker
   const { data: events } = await supabase
@@ -81,9 +69,9 @@ export default async function LiveMatchingPage({
         .eq("eventId", selectedEventId)
     : { data: [] };
 
-  const participantMap = new Map<string, string>();
+  const participantMap: Record<string, string> = {};
   (eventAttendees || []).forEach((a: any) => {
-    if (a.participantNumber) participantMap.set(a.userId, a.participantNumber);
+    if (a.participantNumber) participantMap[a.userId] = a.participantNumber;
   });
 
   // Used tables logic (to prevent duplicate table assignments)
@@ -208,22 +196,6 @@ export default async function LiveMatchingPage({
     return { ok: true, message: "Antrean pasangan berhasil dihapus." };
   }
 
-  // Filter berdasarkan tab aktif
-  const tabStatuses = TAB_STATUSES[activeTab] || [];
-  const filteredRequests = tabStatuses.length > 0
-    ? requests.filter(r => tabStatuses.includes(r.status))
-    : requests;
-
-  // Hitung per tab untuk badge
-  const tabCounts: Record<string, number> = {
-    active: requests.filter(r => ["PENDING", "APPROVED"].includes(r.status)).length,
-    lanjut: requests.filter(r => ["LANJUT", "SL"].includes(r.status)).length,
-    tidak: requests.filter(r => r.status === "TIDAK_LANJUT").length,
-    all: requests.length,
-  };
-
-  const statusVariant = (s: string) =>
-    s === "APPROVED" || s === "LANJUT" || s === "SL" ? "default" : "secondary";
 
   return (
     <div className="space-y-6">
@@ -301,93 +273,14 @@ export default async function LiveMatchingPage({
         </CardContent>
       </Card>
 
-      <MatchTabs counts={tabCounts}>
-        <div className="grid gap-4">
-          {filteredRequests.map((req: any) => {
-            const senderProfile = req.senderProfile;
-            const receiverProfile = req.receiverProfile;
-            const shortId = req.id.slice(-6).toUpperCase();
-            const senderNum = participantMap.get(req.senderId);
-            const receiverNum = participantMap.get(req.receiverId);
-
-            return (
-              <Card key={req.id} className="overflow-hidden">
-                <CardContent className="flex flex-col items-center gap-6 p-4 md:flex-row md:justify-between relative pt-8 md:pt-4">
-                  <div className="absolute top-0 left-0 bg-muted px-3 py-1 rounded-br-lg text-[10px] font-mono font-bold text-muted-foreground border-r border-b">
-                    KODE: {shortId}
-                  </div>
-
-                  <div className="flex-1 text-center md:text-left mt-5">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">PENGIRIM</p>
-                    <h4 className="font-bold text-lg">{senderProfile?.namaLengkap || "-"}</h4>
-                    <p className="text-sm text-muted-foreground">{senderProfile?.asalKelompok}</p>
-                    {senderNum && <Badge variant="outline" className="mt-1 text-[10px]">No. {senderNum}</Badge>}
-                  </div>
-
-                  <div className="flex flex-col items-center gap-1">
-                    <ArrowRight className="h-5 w-5 text-muted-foreground" />
-                    <Badge variant={statusVariant(req.status)}>{statusLabel(req.status)}</Badge>
-                    {req.tableNumber && (
-                      <span className="text-xs text-muted-foreground">Meja {req.tableNumber}</span>
-                    )}
-                  </div>
-
-                  <div className="flex-1 text-center md:text-right">
-                    <p className="text-xs font-medium text-muted-foreground">PENERIMA</p>
-                    <h4 className="font-semibold">{receiverProfile?.namaLengkap || "-"}</h4>
-                    <p className="text-sm text-muted-foreground">{receiverProfile?.asalKelompok}</p>
-                    {receiverNum && <Badge variant="outline" className="mt-1 text-[10px]">No. {receiverNum}</Badge>}
-                  </div>
-
-                  <div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-3">
-                    <ActionForm action={updateRequest.bind(null, req.id)} className="flex flex-wrap items-center gap-2">
-                      <input type="hidden" name="eventId" value={selectedEventId || ""} />
-                      <select
-                        name="tableNumber"
-                        defaultValue={req.tableNumber || ""}
-                        className="h-9 w-16 rounded-md border bg-background px-2 text-sm"
-                      >
-                        <option value="">-</option>
-                        {req.tableNumber && (
-                           <option value={req.tableNumber}>{req.tableNumber}</option>
-                        )}
-                        {availableTables.map((t) => (
-                          <option key={t} value={t}>{t}</option>
-                        ))}
-                      </select>
-                      <select name="status" className="h-9 rounded-md border bg-background px-2 text-sm">
-                        <option value="PENDING">Menunggu</option>
-                        <option value="APPROVED">Sedang Taaruf</option>
-                        <option value="LANJUT">Lanjut</option>
-                        <option value="SL">Lamaran (SL)</option>
-                        <option value="TIDAK_LANJUT">Tidak Lanjut</option>
-                      </select>
-                      <SubmitButton size="sm" pendingText="...">Update</SubmitButton>
-                    </ActionForm>
-
-                    <Button variant="secondary" size="sm" asChild title="Cetak Biodata">
-                      <a href={`/admin/print/match/${req.id}`} target="_blank">
-                        <Printer className="mr-2 h-4 w-4" /> Bio
-                      </a>
-                    </Button>
-
-                    <DeleteConfirmButton
-                      title="Hapus Antrean?"
-                      description="Hapus data pasangan ini dari daftar antrean event."
-                      action={deleteRequest.bind(null, req.id)}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-          {filteredRequests.length === 0 && (
-            <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground bg-muted/20">
-              <p className="font-bold">Tidak ada data di tab ini.</p>
-            </div>
-          )}
-        </div>
-      </MatchTabs>
+      <MatchDesk
+        requests={requests}
+        participantMap={participantMap}
+        availableTables={availableTables}
+        selectedEventId={selectedEventId}
+        updateRequest={updateRequest}
+        deleteRequest={deleteRequest}
+      />
     </div>
   );
 }
