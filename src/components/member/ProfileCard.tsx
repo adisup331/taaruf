@@ -9,10 +9,11 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Maximize2 } from "lucide-react";
 import { Badge } from "../ui/badge";
 
-export function ProfileCard({ profile, eventId, isEventBlurActive, targetUserId, alreadyRequested = false, isLocked = false }: any) {
+export function ProfileCard({ profile, eventId, isEventBlurActive, targetUserId, alreadyRequested = false, lockType = null }: any) {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(alreadyRequested);
   const age = new Date().getFullYear() - new Date(profile.tanggalLahir).getFullYear();
+  const isLocked = !!lockType; // "taaruf" atau "pending"
   const disabled = loading || sent || isLocked;
 
   async function handleRequest() {
@@ -129,12 +130,23 @@ export function ProfileCard({ profile, eventId, isEventBlurActive, targetUserId,
           disabled={disabled}
           className={cn(
             "w-full rounded-3xl h-14 font-black text-lg transition-all active:scale-95 shadow-lg",
-            isLocked ? "bg-amber-50 text-amber-500 border border-amber-200 shadow-none"
+            lockType === "taaruf" ? "bg-amber-50 text-amber-500 border border-amber-200 shadow-none"
+            : lockType === "pending" ? "bg-orange-50 text-orange-400 border border-orange-200 shadow-none"
             : sent ? "bg-gray-100 text-gray-400"
             : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200"
           )}
         >
-          {isLocked ? "Sedang Taaruf" : alreadyRequested ? "Sudah Diminta ✓" : sent ? "Terkirim ✓" : loading ? "Memproses..." : "Lancarkan"}
+          {lockType === "taaruf"
+            ? "Sedang Proses Taaruf"
+            : lockType === "pending"
+            ? "Sedang Diproses Orang Lain"
+            : alreadyRequested
+            ? "Sudah Diminta ✓"
+            : sent
+            ? "Terkirim ✓"
+            : loading
+            ? "Memproses..."
+            : "Lancarkan"}
         </Button>
       </CardFooter>
     </Card>

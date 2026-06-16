@@ -90,11 +90,12 @@ export default async function MemberDashboard() {
   const sentSet = new Set((myRequests || []).map((r: any) => r.receiverId));
 
   let profiles: any[] = [];
-  let lockedUserIds = new Set<string>();
+  // Map userId → status lock: "taaruf" (APPROVED/LANJUT/SL) atau "pending" (PENDING dari orang lain)
+  let lockStatus = new Map<string, string>();
 
   if (attendeeUserIds.length > 0) {
-    // 2 query PARALEL: opposite profiles + active requests (locked)
-    const [{ data: oppositeProfiles }, { data: activeRequests }] = await Promise.all([
+    // 2 query PARALEL: opposite profiles + ALL active requests (termasuk PENDING)
+    const [{ data: oppositeProfiles }, { data: allRequests }] = await Promise.all([
       supabase
         .from('Profile')
         .select('id, userId, namaLengkap, tanggalLahir, asalDaerah, asalKelompok, asalDesa, fotoProfil, fotoEvent')
@@ -102,17 +103,34 @@ export default async function MemberDashboard() {
         .in('userId', attendeeUserIds),
       supabase
         .from('TaarufRequest')
-        .select('senderId, receiverId')
+        .select('senderId, receiverId, status')
         .eq('eventId', activeEvent.id)
-        .in('status', ['APPROVED', 'LANJUT', 'SL'])
+        .in('status', ['PENDING', 'APPROVED', 'LANJUT', 'SL'])
     ]);
 
     if (oppositeProfiles && oppositeProfiles.length > 0) {
-      activeRequests?.forEach(req => {
-        lockedUserIds.add(req.senderId);
-        lockedUserIds.add(req.receiverId);
+      // Tentukan status lock per user
+      // Prioritas: taaruf aktif (APPROVED/LANJUT/SL) > pending dari orang lain
+      allRequests?.forEach(req => {
+        const isTaarufAktif = ['APPROVED', 'LANJUT', 'SL'].includes(req.status);
+        const isPending = req.status === 'PENDING';
+
+        for (const userId of [req.senderId, req.receiverId]) {
+          // Skip diri sendiri
+          if (userId === uid) continue;
+
+          if (isTaarufAktif) {
+            lockStatus.set(userId, "taaruf"); // Override apapun
+          } else if (isPending && !lockStatus.has(userId)) {
+            // Hanya set pending jika belum di-set oleh taaruf aktif
+            // Dan hanya jika bukan request DARI saya (sudah ditangani oleh sentSet)
+            if (req.senderId !== uid && req.receiverId !== uid) {
+              lockStatus.set(userId, "pending");
+            }
+          }
+        }
       });
-      // Tampilkan SEMUA profil lawan jenis, tandai yang locked
+
       profiles = oppositeProfiles;
     }
   }
@@ -133,7 +151,7 @@ export default async function MemberDashboard() {
       <div className="w-full space-y-10 pb-24">
         {profiles.length > 0 ? (
           profiles.map(p => {
-            const isLocked = lockedUserIds.has(p.userId);
+            const lock = lockStatus.get(p.userId);
             return (
               <ProfileCard
                 key={p.id}
@@ -142,7 +160,7 @@ export default async function MemberDashboard() {
                 isEventBlurActive={activeEvent.isPhotoBlurred}
                 targetUserId={p.userId}
                 alreadyRequested={sentSet.has(p.userId)}
-                isLocked={isLocked}
+                lockType={lock || null}
               />
             );
           })

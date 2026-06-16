@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, Save, UserPlus, Trash2, CheckCircle2, Camera } from "lucide-react";
+import { ArrowLeft, Save, UserPlus, Trash2, CheckCircle2, Camera, UserCheck, UserX, Users } from "lucide-react";
 import { ShareEvent } from "@/components/admin-panel/share-event";
 import { DeleteEventButton } from "@/components/admin-panel/delete-event-button";
 import { ActionForm } from "@/components/admin-panel/action-form";
@@ -18,8 +18,6 @@ import { nextParticipantNumber } from "@/lib/participant";
 
 export default async function EventDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
-  // Pakai revalidate 0 atau force-dynamic agar data selalu fresh dari DB
-  // atau cukup pastikan query tidak di-cache secara agresif.
 
   const { data: event } = await supabase
     .from("Event")
@@ -36,6 +34,8 @@ export default async function EventDetailPage({ params }: { params: { id: string
       id,
       participantNumber,
       isVerified,
+      isCheckedIn,
+      checkedInAt,
       userId,
       User (
         id,
@@ -54,12 +54,13 @@ export default async function EventDetailPage({ params }: { params: { id: string
   const attendees = attendeesRaw?.map((a: any) => {
     const userData = Array.isArray(a.User) ? a.User[0] : a.User;
     const profile = Array.isArray(userData?.Profile) ? userData.Profile[0] : userData?.Profile;
-
     return {
       ...a,
       profile: profile || { namaLengkap: userData?.name || "Member Baru", jenisKelamin: "IKHWAN" }
     }
   }) || [];
+
+  const checkedInCount = attendees.filter((a: any) => a.isCheckedIn).length;
 
   // Members NOT yet in this event (for manual add dropdown)
   const attendeeUserIds = (attendees || []).map((a: any) => a.userId);
@@ -114,7 +115,6 @@ export default async function EventDetailPage({ params }: { params: { id: string
     let participantNumber = (formData.get("participantNumber") as string)?.trim() || null;
     if (!userId) return { ok: false, message: "Pilih member dulu." };
 
-    // Auto-assign nomor peserta bila admin tidak mengisi
     if (!participantNumber) {
       participantNumber = await nextParticipantNumber(supabase, params.id);
     }
@@ -160,6 +160,38 @@ export default async function EventDetailPage({ params }: { params: { id: string
     if (error) return { ok: false, message: `Gagal: ${error.message}` };
     revalidatePath(`/admin/events/${params.id}`);
     return { ok: true, message: "Peserta dihapus." };
+  }
+
+  async function checkinAttendee(
+    attendeeId: string,
+    _prev: ActionResult,
+    _formData: FormData
+  ): Promise<ActionResult> {
+    "use server";
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("EventAttendee")
+      .update({ isCheckedIn: true, checkedInAt: new Date().toISOString() })
+      .eq("id", attendeeId);
+    if (error) return { ok: false, message: `Gagal checkin: ${error.message}` };
+    revalidatePath(`/admin/events/${params.id}`);
+    return { ok: true, message: "Peserta dicheckin." };
+  }
+
+  async function uncheckAttendee(
+    attendeeId: string,
+    _prev: ActionResult,
+    _formData: FormData
+  ): Promise<ActionResult> {
+    "use server";
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("EventAttendee")
+      .update({ isCheckedIn: false, checkedInAt: null })
+      .eq("id", attendeeId);
+    if (error) return { ok: false, message: `Gagal: ${error.message}` };
+    revalidatePath(`/admin/events/${params.id}`);
+    return { ok: true, message: "Checkin dibatalkan." };
   }
 
   const dateLocal = new Date(event.date).toISOString().slice(0, 16);
@@ -228,7 +260,16 @@ export default async function EventDetailPage({ params }: { params: { id: string
       {/* Attendee management */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Peserta Acara ({attendees?.length ?? 0})</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">Peserta Acara ({attendees?.length ?? 0})</CardTitle>
+            <div className="flex items-center gap-2 text-sm">
+              <Badge variant="outline" className="gap-1.5 px-3 py-1">
+                <UserCheck className="h-3.5 w-3.5 text-emerald-600" />
+                <span className="font-bold text-emerald-600">{checkedInCount}</span>
+                <span className="text-muted-foreground">/ {attendees.length} hadir</span>
+              </Badge>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Tambah member yang sudah terdaftar di Data Member */}
@@ -267,13 +308,13 @@ export default async function EventDetailPage({ params }: { params: { id: string
                   <th className="px-3 py-2 font-medium">Nama</th>
                   <th className="px-3 py-2 font-medium">Gender</th>
                   <th className="px-3 py-2 font-medium">No. Peserta</th>
-                  <th className="px-3 py-2 font-medium">Status</th>
+                  <th className="px-3 py-2 font-medium">Kehadiran</th>
                   <th className="px-3 py-2 font-medium text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {attendees?.map((a: any) => (
-                  <tr key={a.id} className="border-b">
+                  <tr key={a.id} className={`border-b ${a.isCheckedIn ? "bg-emerald-50/50" : ""}`}>
                     <td className="px-3 py-2">
                       <Avatar className="h-10 w-10 border shadow-sm">
                          {photoUrl(a.profile?.fotoProfil) ? (
@@ -303,26 +344,48 @@ export default async function EventDetailPage({ params }: { params: { id: string
                       </ActionForm>
                     </td>
                     <td className="px-3 py-2">
-                      {a.isVerified ? (
-                        <span className="flex items-center gap-1 text-green-600">
-                          <CheckCircle2 className="h-4 w-4" /> Verified
-                        </span>
+                      {a.isCheckedIn ? (
+                        <div className="flex flex-col">
+                          <span className="flex items-center gap-1 text-emerald-600 font-bold text-xs">
+                            <CheckCircle2 className="h-4 w-4" /> Hadir
+                          </span>
+                          {a.checkedInAt && (
+                            <span className="text-[10px] text-muted-foreground">
+                              {new Date(a.checkedInAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          )}
+                        </div>
                       ) : (
-                        <span className="text-muted-foreground">Menunggu</span>
+                        <span className="text-xs text-muted-foreground">Belum hadir</span>
                       )}
                     </td>
                     <td className="px-3 py-2 text-right">
-                      <ActionForm action={removeAttendee.bind(null, a.id)}>
-                        <SubmitButton size="icon" variant="ghost" className="text-destructive" pendingText="">
-                          <Trash2 className="h-4 w-4" />
-                        </SubmitButton>
-                      </ActionForm>
+                      <div className="flex items-center justify-end gap-1">
+                        {a.isCheckedIn ? (
+                          <ActionForm action={uncheckAttendee.bind(null, a.id)}>
+                            <SubmitButton size="icon" variant="ghost" className="text-amber-600 hover:text-amber-700 hover:bg-amber-50" pendingText="" title="Batalkan checkin">
+                              <UserX className="h-4 w-4" />
+                            </SubmitButton>
+                          </ActionForm>
+                        ) : (
+                          <ActionForm action={checkinAttendee.bind(null, a.id)}>
+                            <SubmitButton size="icon" variant="ghost" className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" pendingText="" title="Checkin hadir">
+                              <UserCheck className="h-4 w-4" />
+                            </SubmitButton>
+                          </ActionForm>
+                        )}
+                        <ActionForm action={removeAttendee.bind(null, a.id)}>
+                          <SubmitButton size="icon" variant="ghost" className="text-destructive" pendingText="">
+                            <Trash2 className="h-4 w-4" />
+                          </SubmitButton>
+                        </ActionForm>
+                      </div>
                     </td>
                   </tr>
                 ))}
                 {(!attendees || attendees.length === 0) && (
                   <tr>
-                    <td colSpan={5} className="px-3 py-8 text-center text-muted-foreground">
+                    <td colSpan={6} className="px-3 py-8 text-center text-muted-foreground">
                       Belum ada peserta. Tambah manual di atas atau tunggu member scan QR.
                     </td>
                   </tr>

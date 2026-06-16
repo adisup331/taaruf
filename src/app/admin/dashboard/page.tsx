@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Clock, HeartHandshake, CheckCircle2 } from "lucide-react";
+import { Users, Clock, HeartHandshake, CheckCircle2, UserCheck } from "lucide-react";
 
 export default async function AdminDashboard() {
   const supabase = createClient();
@@ -9,16 +9,19 @@ export default async function AdminDashboard() {
     { count: totalMembers },
     { count: pendingRequests },
     { count: approvedMatches },
-    { count: totalLanjut }
+    { count: totalLanjut },
+    { count: checkedInToday }
   ] = await Promise.all([
     supabase.from('User').select('*', { count: 'exact', head: true }).eq('role', 'MEMBER'),
     supabase.from('TaarufRequest').select('*', { count: 'exact', head: true }).eq('status', 'PENDING'),
     supabase.from('TaarufRequest').select('*', { count: 'exact', head: true }).eq('status', 'APPROVED'),
     supabase.from('TaarufRequest').select('*', { count: 'exact', head: true }).in('status', ['LANJUT', 'SL']),
+    supabase.from('EventAttendee').select('*', { count: 'exact', head: true }).eq('isCheckedIn', true),
   ]);
 
   const stats = [
     { title: "Total Member", value: totalMembers, icon: Users, hint: "Member terdaftar" },
+    { title: "Hadir (Checkin)", value: checkedInToday, icon: UserCheck, hint: "Peserta yang sudah checkin" },
     { title: "Pengajuan Pending", value: pendingRequests, icon: Clock, hint: "Menunggu plot meja" },
     { title: "Taaruf Berlangsung", value: approvedMatches, icon: HeartHandshake, hint: "Sedang di meja diskusi" },
     { title: "Sudah Lamaran (SL)", value: totalLanjut, icon: CheckCircle2, hint: "Proses taaruf selesai" },
@@ -31,7 +34,7 @@ export default async function AdminDashboard() {
         <p className="text-muted-foreground">Ringkasan aktivitas platform Taaruf Syar'i.</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         {stats.map((stat) => (
           <Card key={stat.title}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

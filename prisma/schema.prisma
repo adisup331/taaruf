@@ -92,11 +92,13 @@ model Event {
 }
 
 model EventAttendee {
-  id                String   @id @default(cuid())
+  id                String    @id @default(cuid())
   eventId           String
   userId            String
   participantNumber String?
-  isVerified        Boolean  @default(false)
+  isVerified        Boolean   @default(false)
+  isCheckedIn       Boolean   @default(false)
+  checkedInAt       DateTime?
 
   event             Event    @relation(fields: [eventId], references: [id])
   user              User     @relation(fields: [userId], references: [id])
