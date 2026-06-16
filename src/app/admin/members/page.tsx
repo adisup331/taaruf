@@ -4,14 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, UserPlus } from "lucide-react";
+import { Search } from "lucide-react";
 import { genderLabel, photoUrl } from "@/lib/utils";
-import { ActionForm } from "@/components/admin-panel/action-form";
-import { SubmitButton } from "@/components/admin-panel/submit-button";
 import { type ActionResult } from "@/lib/action-result";
 import { EditMemberDialog } from "./edit-dialog";
 import { AddToEventButton } from "./add-to-event";
 import { DeleteConfirmButton } from "@/components/admin-panel/delete-confirm-button";
+import { RegisterMemberForm } from "./register-form";
 
 interface MembersPageProps {
   searchParams: { q?: string };
@@ -68,6 +67,10 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
 
     if (userErr || !newUser) return { ok: false, message: `Gagal buat user: ${userErr?.message}` };
 
+    // Field tambahan (opsional)
+    const g = (k: string) => (formData.get(k) as string)?.trim() || undefined;
+    const gInt = (k: string) => { const v = formData.get(k) as string; return v ? parseInt(v) : undefined; };
+
     const { error: profileErr } = await supabase.from("Profile").insert({
       userId: newUser.id,
       namaLengkap,
@@ -78,6 +81,20 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
       asalDesa: asalDesa || "-",
       nomorHp,
       instagram,
+      // Data lengkap (opsional)
+      statusMubaligh: g("statusMubaligh"),
+      pendidikanTerakhir: g("pendidikanTerakhir"),
+      statusPernikahan: g("statusPernikahan"),
+      pekerjaan: g("pekerjaan"),
+      anakKe: gInt("anakKe"),
+      jumlahSaudara: gInt("jumlahSaudara"),
+      dapukanDaerah: g("dapukanDaerah"),
+      dapukanDesa: g("dapukanDesa"),
+      dapukanKelompok: g("dapukanKelompok"),
+      kondisiIbu: g("kondisiIbu"),
+      statusJamaahIbu: g("statusJamaahIbu"),
+      kondisiAyah: g("kondisiAyah"),
+      statusJamaahAyah: g("statusJamaahAyah"),
     });
 
     if (profileErr) return { ok: false, message: `Gagal buat profil: ${profileErr.message}` };
@@ -120,58 +137,12 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
           <CardTitle className="text-base">Daftarkan Member Baru</CardTitle>
         </CardHeader>
         <CardContent>
-          <ActionForm action={registerMember} resetOnSuccess className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Nama Lengkap *</label>
-              <Input name="namaLengkap" required />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Jenis Kelamin *</label>
-              <select name="jenisKelamin" required className="h-10 w-full rounded-md border bg-background px-3 text-sm">
-                <option value="">Pilih...</option>
-                <option value="IKHWAN">Laki-Laki</option>
-                <option value="AKHWAT">Perempuan</option>
-              </select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Tanggal Lahir *</label>
-              <Input name="tanggalLahir" type="date" required />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Asal Daerah</label>
-              <select name="asalDaerah" className="h-10 w-full rounded-md border bg-background px-3 text-sm">
-                <option value="">Pilih daerah...</option>
-                {daerahList?.map((d: any) => <option key={d.nama} value={d.nama}>{d.nama}</option>)}
-              </select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Asal Desa</label>
-              <select name="asalDesa" className="h-10 w-full rounded-md border bg-background px-3 text-sm">
-                <option value="">Pilih desa...</option>
-                {desaList?.map((d: any) => <option key={d.nama} value={d.nama}>{d.nama}</option>)}
-              </select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Asal Kelompok</label>
-              <select name="asalKelompok" className="h-10 w-full rounded-md border bg-background px-3 text-sm">
-                <option value="">Pilih kelompok...</option>
-                {kelompokList?.map((d: any) => <option key={d.nama} value={d.nama}>{d.nama}</option>)}
-              </select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">No. HP *</label>
-              <Input name="nomorHp" type="tel" required />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs text-muted-foreground">Instagram</label>
-              <Input name="instagram" placeholder="tanpa @" />
-            </div>
-            <div className="flex items-end">
-              <SubmitButton pendingText="Mendaftarkan..." className="w-full">
-                <UserPlus className="mr-2 h-4 w-4" /> Daftarkan Member
-              </SubmitButton>
-            </div>
-          </ActionForm>
+          <RegisterMemberForm
+            action={registerMember}
+            daerahList={daerahList || []}
+            desaList={desaList || []}
+            kelompokList={kelompokList || []}
+          />
         </CardContent>
       </Card>
 
