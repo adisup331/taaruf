@@ -5,27 +5,25 @@ export default async function MemberLayout({ children }: { children: React.React
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
+  if (!user) return <>{children}</>;
+
+  // ⚡ Baca role dari metadata — tidak perlu query DB
+  const role = user.user_metadata?.role as string | undefined;
+
+  // Staff tidak dapat nav member
+  if (role === "ADMIN" || role === "PHOTOGRAPHER") {
     return <>{children}</>;
   }
 
-  // Paralel: ambil user + badge count sekaligus
-  const [{ data: dbUser }, { count }] = await Promise.all([
-    supabase.from("User").select("id, role").eq("email", user.email).maybeSingle(),
-    supabase
-      .from("TaarufRequest")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "APPROVED")
-      .not("tableNumber", "is", null),
-  ]);
+  // Untuk member, ambil badge count — tapi tidak perlu tahu userId
+  // Gunakan user.id langsung dari auth token
+  const { count } = await supabase
+    .from("TaarufRequest")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "APPROVED")
+    .not("tableNumber", "is", null)
+    .or(`senderId.eq.${user.id},receiverId.eq.${user.id}`);
 
-  const isStaff = dbUser?.role === "ADMIN" || dbUser?.role === "PHOTOGRAPHER";
-  if (isStaff || !dbUser) {
-    return <>{children}</>;
-  }
-
-  // Filter badge hanya untuk user ini (tidak bisa di DB query atas karena belum tahu uid)
-  // Tapi count global cukup — badge cuma indikator
   const taarufBadge = count || 0;
 
   return (

@@ -51,16 +51,23 @@ function LoginForm() {
       return
     }
 
-    // Tentukan tujuan berdasarkan role
+    // Cek role untuk routing — ambil dari DB
     const { data: dbUser } = await supabase
       .from("User")
       .select("role")
       .eq("email", email)
       .single()
 
-    if (dbUser?.role === "ADMIN") {
+    const role = dbUser?.role || "MEMBER"
+
+    // Simpan role ke user metadata agar middleware tidak perlu query DB setiap request
+    if (role !== data.user.user_metadata?.role) {
+      await supabase.auth.updateUser({ data: { role } })
+    }
+
+    if (role === "ADMIN") {
       router.push("/admin/dashboard")
-    } else if (dbUser?.role === "PHOTOGRAPHER") {
+    } else if (role === "PHOTOGRAPHER") {
       router.push("/admin/events/photography")
     } else {
       router.push(next || "/dashboard")

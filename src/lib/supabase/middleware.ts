@@ -3,9 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+    request: { headers: request.headers },
   })
 
   const supabase = createServerClient(
@@ -13,16 +11,13 @@ export async function updateSession(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          // Set di request DAN response agar token refresh tersimpan
+        get(name) { return request.cookies.get(name)?.value },
+        set(name, value, options) {
           request.cookies.set({ name, value, ...options })
           response = NextResponse.next({ request: { headers: request.headers } })
           response.cookies.set({ name, value, ...options })
         },
-        remove(name: string, options: CookieOptions) {
+        remove(name, options) {
           request.cookies.set({ name, value: '', ...options })
           response = NextResponse.next({ request: { headers: request.headers } })
           response.cookies.set({ name, value: '', ...options })
@@ -31,19 +26,18 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  // PENTING: getUser() WAJIB dipanggil agar token auto-refresh
-  // Jika tidak dipanggil, session expired dan user harus relogin
-  const { data: { user } } = await supabase.auth.getUser()
-
   const pathname = request.nextUrl.pathname
 
-  // Route yang TIDAK perlu proteksi → skip semua logic
+  // Public routes → hanya refresh session token, tidak perlu proteksi
   const isPublicRoute =
     pathname === '/' ||
     pathname === '/login' ||
     pathname.startsWith('/register') ||
     pathname.startsWith('/auth/') ||
     pathname.startsWith('/api/')
+
+  // getUser() WAJIB dipanggil untuk refresh token — tapi hanya sekali
+  const { data: { user } } = await supabase.auth.getUser()
 
   if (isPublicRoute) return response
 
@@ -54,7 +48,6 @@ export async function updateSession(request: NextRequest) {
   const isPhotoPath = pathname.startsWith('/admin/events/photography')
   const isMemberArea = pathname.startsWith('/e/') || pathname.startsWith('/register-profile')
 
-  // Belum login → redirect ke login (kecuali /e/ yang handle sendiri)
   if (!user) {
     if (isAdminPath || isDashboardPath || isTaarufPath || isProfilPath) {
       const url = request.nextUrl.clone()
@@ -65,30 +58,41 @@ export async function updateSession(request: NextRequest) {
     return response
   }
 
-  // User sudah login → cek role hanya untuk admin path atau member-block
+  // ⚡ OPTIMASI: baca role dari user_metadata (tidak perlu query DB)
+  // Role disimpan ke metadata saat login di handleLogin (login/page.tsx)
+  const roleFromMeta = user.user_metadata?.role as string | undefined
+
+  // Jika metadata tidak punya role (akun lama / Google login),
+  // fallback ke DB query HANYA saat masuk admin atau member area
   const needsRoleCheck = isAdminPath || isDashboardPath || isMemberArea
-  if (!needsRoleCheck) return response
 
-  const { data: dbUser } = await supabase
-    .from('User')
-    .select('role')
-    .eq('email', user.email)
-    .single()
+  let role = roleFromMeta
 
-  const isStaff = dbUser?.role === 'ADMIN' || dbUser?.role === 'PHOTOGRAPHER'
+  if (!role && needsRoleCheck) {
+    // Query DB hanya jika metadata kosong
+    const { data: dbUser } = await supabase
+      .from('User')
+      .select('role')
+      .eq('email', user.email)
+      .single()
+    role = dbUser?.role
+  }
+
+  if (!role && !needsRoleCheck) return response
+
+  const isStaff = role === 'ADMIN' || role === 'PHOTOGRAPHER'
 
   if (isAdminPath) {
-    if (dbUser?.role === 'PHOTOGRAPHER' && !isPhotoPath) {
+    if (role === 'PHOTOGRAPHER' && !isPhotoPath) {
       return NextResponse.redirect(new URL('/admin/events/photography', request.url))
     }
-    if (dbUser?.role !== 'ADMIN' && dbUser?.role !== 'PHOTOGRAPHER') {
+    if (role !== 'ADMIN' && role !== 'PHOTOGRAPHER') {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
   }
 
-  // Staff tidak boleh masuk area member
   if (isStaff && (isDashboardPath || isMemberArea)) {
-    const target = dbUser?.role === 'PHOTOGRAPHER' ? '/admin/events/photography' : '/admin/dashboard'
+    const target = role === 'PHOTOGRAPHER' ? '/admin/events/photography' : '/admin/dashboard'
     return NextResponse.redirect(new URL(target, request.url))
   }
 
