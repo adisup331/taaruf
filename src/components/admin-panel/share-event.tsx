@@ -5,11 +5,14 @@ import { QRCodeSVG } from "qrcode.react"
 import { Copy, Check, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
+const PROD_URL = "https://taarufyuk.vercel.app"
+
 export function ShareEvent({ url, slug }: { url: string; slug: string }) {
   const [copied, setCopied] = useState(false)
+  const liveUrl = `${PROD_URL}/e/${slug}`
 
-  const copy = async () => {
-    await navigator.clipboard.writeText(url)
+  const copy = async (text: string) => {
+    await navigator.clipboard.writeText(text)
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)
   }
@@ -39,21 +42,43 @@ export function ShareEvent({ url, slug }: { url: string; slug: string }) {
   return (
     <div className="flex flex-col items-center gap-4 rounded-xl border bg-muted/30 p-6">
       <div className="rounded-lg bg-white p-3">
-        <QRCodeSVG id={`qr-${slug}`} value={url} size={180} level="H" />
+        <QRCodeSVG id={`qr-${slug}`} value={liveUrl} size={180} level="H" />
       </div>
-      <div className="flex w-full items-center gap-2">
-        <code className="flex-1 truncate rounded bg-muted px-3 py-2 text-xs text-muted-foreground">
-          {url}
-        </code>
-        <Button type="button" variant="outline" size="icon" onClick={copy}>
-          {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-        </Button>
-        <Button type="button" variant="outline" size="icon" onClick={downloadQR}>
-          <Download className="h-4 w-4" />
-        </Button>
+
+      {/* Link Production */}
+      <div className="w-full space-y-2">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600">Link Live (Production)</p>
+        <div className="flex w-full items-center gap-2">
+          <code className="flex-1 truncate rounded bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 border border-emerald-100">
+            {liveUrl}
+          </code>
+          <Button type="button" variant="outline" size="icon" onClick={() => copy(liveUrl)}>
+            {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+          </Button>
+        </div>
       </div>
+
+      {/* Link Lokal */}
+      {url !== liveUrl && (
+        <div className="w-full space-y-2">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Link Lokal (Dev)</p>
+          <div className="flex w-full items-center gap-2">
+            <code className="flex-1 truncate rounded bg-muted px-3 py-2 text-xs text-muted-foreground">
+              {url}
+            </code>
+            <Button type="button" variant="outline" size="icon" onClick={() => copy(url)}>
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <Button type="button" variant="outline" size="sm" onClick={downloadQR} className="w-full">
+        <Download className="h-4 w-4 mr-2" /> Download QR Code
+      </Button>
+
       <p className="text-center text-xs text-muted-foreground">
-        Member scan QR atau buka link ini untuk bergabung & check-in ke acara.
+        QR Code mengarah ke link production. Member scan untuk bergabung ke acara.
       </p>
     </div>
   )
