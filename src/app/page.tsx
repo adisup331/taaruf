@@ -45,7 +45,7 @@ export default function LandingPage() {
                 <Link href="/register">Daftar Sekarang <ArrowRight className="ml-2 h-5 w-5" /></Link>
               </Button>
               <Button size="lg" variant="outline" asChild className="h-14 px-8 text-lg font-bold border-gray-200 rounded-2xl w-full sm:w-auto">
-                <Link href="/login text-emerald-950">Masuk Akun</Link>
+                <Link href="/login">Masuk Akun</Link>
               </Button>
             </div>
 

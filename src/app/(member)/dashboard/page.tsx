@@ -11,7 +11,7 @@ export default async function MemberDashboard() {
 
   if (!user) redirect('/login');
 
-  // Resolve DB user (+ guard: staff tidak boleh di sini)
+  // 1 query: user + role
   const { data: dbUser } = await supabase
     .from('User')
     .select('id, role')
@@ -23,12 +23,21 @@ export default async function MemberDashboard() {
 
   const uid = dbUser?.id || user.id;
 
-  // Cari keikutsertaan member yang TERVERIFIKASI di event AKTIF
-  const { data: myAttendances } = await supabase
-    .from('EventAttendee')
-    .select('eventId, isVerified, participantNumber, Event(id, title, isActive, isPhotoBlurred, date)')
-    .eq('userId', uid)
-    .eq('isVerified', true);
+  // 2 query paralel: attendance + profile sendiri
+  const [{ data: myAttendances }, { data: userProfile }] = await Promise.all([
+    supabase
+      .from('EventAttendee')
+      .select('eventId, isVerified, participantNumber, Event(id, title, isActive, isPhotoBlurred, date)')
+      .eq('userId', uid)
+      .eq('isVerified', true),
+    supabase
+      .from('Profile')
+      .select('jenisKelamin')
+      .eq('userId', uid)
+      .maybeSingle()
+  ]);
+
+  if (!userProfile) redirect('/register-profile');
 
   const verifiedActive = (myAttendances || [])
     .map((a: any) => ({
@@ -40,7 +49,6 @@ export default async function MemberDashboard() {
 
   const current = verifiedActive[0];
 
-  // Belum masuk event manapun → arahkan scan QR / masukkan nomor
   if (!current) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] text-center px-4 space-y-4 relative">
@@ -61,64 +69,53 @@ export default async function MemberDashboard() {
   }
 
   const activeEvent = current.event;
-
-  // Profil sendiri (untuk tahu gender)
-  const { data: userProfile } = await supabase
-    .from('Profile')
-    .select('*')
-    .eq('userId', uid)
-    .maybeSingle();
-
-  if (!userProfile) redirect('/register-profile');
-
   const oppositeGender = userProfile.jenisKelamin === 'IKHWAN' ? 'AKHWAT' : 'IKHWAN';
 
-  // Peserta event ini yang terverifikasi
-  const { data: allAttendees } = await supabase
-    .from('EventAttendee')
-    .select('userId')
-    .eq('eventId', activeEvent.id)
-    .eq('isVerified', true);
+  // 3 query PARALEL: attendees + opposite profiles + my requests
+  const [{ data: allAttendees }, { data: myRequests }] = await Promise.all([
+    supabase
+      .from('EventAttendee')
+      .select('userId')
+      .eq('eventId', activeEvent.id)
+      .eq('isVerified', true),
+    supabase
+      .from('TaarufRequest')
+      .select('receiverId')
+      .eq('senderId', uid)
+      .eq('eventId', activeEvent.id)
+      .in('status', ['PENDING', 'APPROVED', 'LANJUT', 'SL'])
+  ]);
 
   const attendeeUserIds = allAttendees?.map(a => a.userId) || [];
+  const sentSet = new Set((myRequests || []).map((r: any) => r.receiverId));
 
   let profiles: any[] = [];
+  let lockedUserIds = new Set<string>();
 
   if (attendeeUserIds.length > 0) {
-    const { data: oppositeProfiles } = await supabase
-      .from('Profile')
-      .select('id, userId, namaLengkap, tanggalLahir, asalDaerah, asalKelompok, asalDesa, fotoProfil')
-      .eq('jenisKelamin', oppositeGender)
-      .in('userId', attendeeUserIds);
-
-    if (oppositeProfiles && oppositeProfiles.length > 0) {
-      const profileUserIds = oppositeProfiles.map(p => p.userId);
-
-      const { data: activeRequests } = await supabase
+    // 2 query PARALEL: opposite profiles + active requests (locked)
+    const [{ data: oppositeProfiles }, { data: activeRequests }] = await Promise.all([
+      supabase
+        .from('Profile')
+        .select('id, userId, namaLengkap, tanggalLahir, asalDaerah, asalKelompok, asalDesa, fotoProfil, fotoEvent')
+        .eq('jenisKelamin', oppositeGender)
+        .in('userId', attendeeUserIds),
+      supabase
         .from('TaarufRequest')
         .select('senderId, receiverId')
+        .eq('eventId', activeEvent.id)
         .in('status', ['APPROVED', 'LANJUT', 'SL'])
-        .or(`senderId.in.(${profileUserIds.join(',')}),receiverId.in.(${profileUserIds.join(',')})`);
+    ]);
 
-      const lockedUserIds = new Set();
+    if (oppositeProfiles && oppositeProfiles.length > 0) {
       activeRequests?.forEach(req => {
         lockedUserIds.add(req.senderId);
         lockedUserIds.add(req.receiverId);
       });
-
-      profiles = oppositeProfiles.filter(p => !lockedUserIds.has(p.userId));
+      // Tampilkan SEMUA profil lawan jenis, tandai yang locked
+      profiles = oppositeProfiles;
     }
   }
-
-  // Set lawan jenis yang SUDAH kukirimi permintaan (status aktif) → tombol jadi "Sudah Diminta"
-  const { data: myRequests } = await supabase
-    .from('TaarufRequest')
-    .select('receiverId')
-    .eq('senderId', uid)
-    .eq('eventId', activeEvent.id)
-    .in('status', ['PENDING', 'APPROVED', 'LANJUT', 'SL']);
-
-  const sentSet = new Set((myRequests || []).map((r: any) => r.receiverId));
 
   return (
     <div className="p-4 flex flex-col items-center max-w-md mx-auto">
@@ -135,16 +132,20 @@ export default async function MemberDashboard() {
 
       <div className="w-full space-y-10 pb-24">
         {profiles.length > 0 ? (
-          profiles.map(p => (
-            <ProfileCard
-              key={p.id}
-              profile={p}
-              eventId={activeEvent.id}
-              isEventBlurActive={activeEvent.isPhotoBlurred}
-              targetUserId={p.userId}
-              alreadyRequested={sentSet.has(p.userId)}
-            />
-          ))
+          profiles.map(p => {
+            const isLocked = lockedUserIds.has(p.userId);
+            return (
+              <ProfileCard
+                key={p.id}
+                profile={p}
+                eventId={activeEvent.id}
+                isEventBlurActive={activeEvent.isPhotoBlurred}
+                targetUserId={p.userId}
+                alreadyRequested={sentSet.has(p.userId)}
+                isLocked={isLocked}
+              />
+            );
+          })
         ) : (
           <div className="text-center py-20 text-gray-400">
             Semua peserta lawan jenis sedang dalam proses taaruf.

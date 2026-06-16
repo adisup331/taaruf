@@ -8,7 +8,6 @@ import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
-import { ThemeToggle } from "./theme-toggle"
 import { UserNav } from "./user-nav"
 import { useSidebar } from "./sidebar-context"
 
@@ -81,7 +80,6 @@ export function TopNav({ email, role }: TopNavProps) {
             className="h-9 w-56 bg-muted/50 pl-9"
           />
         </div>
-        <ThemeToggle />
         <UserNav email={email} role={role} />
       </div>
     </header>

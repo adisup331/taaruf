@@ -17,80 +17,79 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.get(name)?.value
         },
         set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
+          // Set di request DAN response agar token refresh tersimpan
+          request.cookies.set({ name, value, ...options })
+          response = NextResponse.next({ request: { headers: request.headers } })
+          response.cookies.set({ name, value, ...options })
         },
         remove(name: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
+          request.cookies.set({ name, value: '', ...options })
+          response = NextResponse.next({ request: { headers: request.headers } })
+          response.cookies.set({ name, value: '', ...options })
         },
       },
     }
   )
 
+  // PENTING: getUser() WAJIB dipanggil agar token auto-refresh
+  // Jika tidak dipanggil, session expired dan user harus relogin
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isAdminPath = request.nextUrl.pathname.startsWith('/admin')
-  const isDashboardPath = request.nextUrl.pathname.startsWith('/dashboard')
-  const isPhotoPath = request.nextUrl.pathname.startsWith('/admin/events/photography')
-  // Area khusus member (selain dashboard) yang staff tidak boleh akses
-  const isMemberArea =
-    request.nextUrl.pathname.startsWith('/e/') ||
-    request.nextUrl.pathname.startsWith('/register-profile')
+  const pathname = request.nextUrl.pathname
 
-  if (user) {
-    // Sync with Supabase DB instead of Prisma
-    const { data: dbUser } = await supabase
-      .from('User')
-      .select('role')
-      .eq('email', user.email)
-      .single()
+  // Route yang TIDAK perlu proteksi → skip semua logic
+  const isPublicRoute =
+    pathname === '/' ||
+    pathname === '/login' ||
+    pathname.startsWith('/register') ||
+    pathname.startsWith('/auth/') ||
+    pathname.startsWith('/api/')
 
-    const isStaff = dbUser?.role === 'ADMIN' || dbUser?.role === 'PHOTOGRAPHER'
+  if (isPublicRoute) return response
 
-    if (isAdminPath) {
-      if (dbUser?.role === 'PHOTOGRAPHER') {
-        if (!isPhotoPath) {
-          return NextResponse.redirect(new URL('/admin/events/photography', request.url))
-        }
-      } else if (dbUser?.role !== 'ADMIN') {
-        return NextResponse.redirect(new URL('/dashboard', request.url))
-      }
+  const isAdminPath = pathname.startsWith('/admin')
+  const isDashboardPath = pathname.startsWith('/dashboard')
+  const isTaarufPath = pathname.startsWith('/taaruf')
+  const isProfilPath = pathname.startsWith('/profil')
+  const isPhotoPath = pathname.startsWith('/admin/events/photography')
+  const isMemberArea = pathname.startsWith('/e/') || pathname.startsWith('/register-profile')
+
+  // Belum login → redirect ke login (kecuali /e/ yang handle sendiri)
+  if (!user) {
+    if (isAdminPath || isDashboardPath || isTaarufPath || isProfilPath) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      url.searchParams.set('next', pathname)
+      return NextResponse.redirect(url)
     }
+    return response
+  }
 
-    // Staff (admin/fotografer) tidak boleh masuk area member
-    if (isStaff && (isDashboardPath || isMemberArea)) {
-      const target = dbUser?.role === 'PHOTOGRAPHER' ? '/admin/events/photography' : '/admin/dashboard'
-      return NextResponse.redirect(new URL(target, request.url))
+  // User sudah login → cek role hanya untuk admin path atau member-block
+  const needsRoleCheck = isAdminPath || isDashboardPath || isMemberArea
+  if (!needsRoleCheck) return response
+
+  const { data: dbUser } = await supabase
+    .from('User')
+    .select('role')
+    .eq('email', user.email)
+    .single()
+
+  const isStaff = dbUser?.role === 'ADMIN' || dbUser?.role === 'PHOTOGRAPHER'
+
+  if (isAdminPath) {
+    if (dbUser?.role === 'PHOTOGRAPHER' && !isPhotoPath) {
+      return NextResponse.redirect(new URL('/admin/events/photography', request.url))
     }
-  } else if (isAdminPath || isDashboardPath) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    if (dbUser?.role !== 'ADMIN' && dbUser?.role !== 'PHOTOGRAPHER') {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+  }
+
+  // Staff tidak boleh masuk area member
+  if (isStaff && (isDashboardPath || isMemberArea)) {
+    const target = dbUser?.role === 'PHOTOGRAPHER' ? '/admin/events/photography' : '/admin/dashboard'
+    return NextResponse.redirect(new URL(target, request.url))
   }
 
   return response
