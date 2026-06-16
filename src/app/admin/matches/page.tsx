@@ -12,6 +12,7 @@ import { DeleteConfirmButton } from "@/components/admin-panel/delete-confirm-but
 import { MatchSearch } from "@/components/admin-panel/match-search";
 import { type ActionResult } from "@/lib/action-result";
 import { statusLabel } from "@/lib/utils";
+import { MatchTabs } from "./match-tabs";
 
 export default async function LiveMatchingPage({
   searchParams,
@@ -278,8 +279,9 @@ export default async function LiveMatchingPage({
         </CardContent>
       </Card>
 
-      <div className="grid gap-4">
-        {requests?.map((req: any) => {
+      <MatchTabs
+        requests={requests || []}
+        renderCard={(req: any) => {
           const senderProfile = req.senderProfile;
           const receiverProfile = req.receiverProfile;
           const shortId = req.id.slice(-6).toUpperCase();
@@ -289,7 +291,6 @@ export default async function LiveMatchingPage({
           return (
             <Card key={req.id} className="overflow-hidden">
               <CardContent className="flex flex-col items-center gap-6 p-4 md:flex-row md:justify-between relative pt-8 md:pt-4">
-                {/* ID Badge integrated into the design */}
                 <div className="absolute top-0 left-0 bg-muted px-3 py-1 rounded-br-lg text-[10px] font-mono font-bold text-muted-foreground border-r border-b">
                   KODE: {shortId}
                 </div>
@@ -357,20 +358,8 @@ export default async function LiveMatchingPage({
               </CardContent>
             </Card>
           );
-        })}
-        {(!requests || requests.length === 0) && (
-          <div className="rounded-xl border border-dashed p-12 text-center text-muted-foreground bg-muted/20">
-            {query ? (
-               <>
-                 <p className="font-bold text-lg">Data tidak ditemukan</p>
-                 <p className="text-sm">Tidak ada pasangan dengan kode atau kriteria "{query}".</p>
-               </>
-            ) : (
-               "Belum ada pasangan. Buat manual di atas atau tunggu pengajuan member."
-            )}
-          </div>
-        )}
-      </div>
+        }}
+      />
     </div>
   );
 }
