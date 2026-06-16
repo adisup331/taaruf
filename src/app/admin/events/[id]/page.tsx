@@ -16,6 +16,7 @@ import { type ActionResult } from "@/lib/action-result";
 import { genderLabel, photoUrl } from "@/lib/utils";
 import { nextParticipantNumber } from "@/lib/participant";
 import { AddMembersForm } from "./add-members";
+import { AttendeeTable } from "./attendee-table";
 
 export default async function EventDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
@@ -261,16 +262,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
       {/* Attendee management */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Peserta Acara ({attendees?.length ?? 0})</CardTitle>
-            <div className="flex items-center gap-2 text-sm">
-              <Badge variant="outline" className="gap-1.5 px-3 py-1">
-                <UserCheck className="h-3.5 w-3.5 text-emerald-600" />
-                <span className="font-bold text-emerald-600">{checkedInCount}</span>
-                <span className="text-muted-foreground">/ {attendees.length} hadir</span>
-              </Badge>
-            </div>
-          </div>
+          <CardTitle className="text-base">Peserta Acara ({attendees?.length ?? 0})</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Tambah member (checkbox multiple) */}
@@ -283,100 +275,17 @@ export default async function EventDetailPage({ params }: { params: { id: string
             </p>
           )}
 
-          {/* List */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left text-muted-foreground">
-                  <th className="px-3 py-2 font-medium w-[60px]">Foto</th>
-                  <th className="px-3 py-2 font-medium">Nama</th>
-                  <th className="px-3 py-2 font-medium">Gender</th>
-                  <th className="px-3 py-2 font-medium">No. Peserta</th>
-                  <th className="px-3 py-2 font-medium">Kehadiran</th>
-                  <th className="px-3 py-2 font-medium text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {attendees?.map((a: any) => (
-                  <tr key={a.id} className={`border-b ${a.isCheckedIn ? "bg-emerald-50/50" : ""}`}>
-                    <td className="px-3 py-2">
-                      <Avatar className="h-10 w-10 border shadow-sm">
-                         {photoUrl(a.profile?.fotoProfil) ? (
-                           <AvatarImage src={photoUrl(a.profile.fotoProfil)!} alt={a.profile.namaLengkap} className="object-cover" />
-                         ) : (
-                           <AvatarFallback className="bg-muted">
-                             <Camera className="h-4 w-4 text-muted-foreground opacity-30" />
-                           </AvatarFallback>
-                         )}
-                      </Avatar>
-                    </td>
-                    <td className="px-3 py-2 font-medium">{a.profile?.namaLengkap || "-"}</td>
-                    <td className="px-3 py-2">
-                      <Badge variant={a.profile?.jenisKelamin === "IKHWAN" ? "default" : "secondary"}>
-                        {genderLabel(a.profile?.jenisKelamin)}
-                      </Badge>
-                    </td>
-                    <td className="px-3 py-2">
-                      <ActionForm action={updateAttendee.bind(null, a.id)} className="flex items-center gap-1">
-                        <Input
-                          name="participantNumber"
-                          defaultValue={a.participantNumber || ""}
-                          placeholder="No"
-                          className="h-8 w-20"
-                        />
-                        <SubmitButton size="sm" variant="outline" pendingText="...">Set</SubmitButton>
-                      </ActionForm>
-                    </td>
-                    <td className="px-3 py-2">
-                      {a.isCheckedIn ? (
-                        <div className="flex flex-col">
-                          <span className="flex items-center gap-1 text-emerald-600 font-bold text-xs">
-                            <CheckCircle2 className="h-4 w-4" /> Hadir
-                          </span>
-                          {a.checkedInAt && (
-                            <span className="text-[10px] text-muted-foreground">
-                              {new Date(a.checkedInAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">Belum hadir</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        {a.isCheckedIn ? (
-                          <ActionForm action={uncheckAttendee.bind(null, a.id)}>
-                            <SubmitButton size="icon" variant="ghost" className="text-amber-600 hover:text-amber-700 hover:bg-amber-50" pendingText="" title="Batalkan checkin">
-                              <UserX className="h-4 w-4" />
-                            </SubmitButton>
-                          </ActionForm>
-                        ) : (
-                          <ActionForm action={checkinAttendee.bind(null, a.id)}>
-                            <SubmitButton size="icon" variant="ghost" className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" pendingText="" title="Checkin hadir">
-                              <UserCheck className="h-4 w-4" />
-                            </SubmitButton>
-                          </ActionForm>
-                        )}
-                        <ActionForm action={removeAttendee.bind(null, a.id)}>
-                          <SubmitButton size="icon" variant="ghost" className="text-destructive" pendingText="">
-                            <Trash2 className="h-4 w-4" />
-                          </SubmitButton>
-                        </ActionForm>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {(!attendees || attendees.length === 0) && (
-                  <tr>
-                    <td colSpan={6} className="px-3 py-8 text-center text-muted-foreground">
-                      Belum ada peserta. Tambah manual di atas atau tunggu member scan QR.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          {/* Tabel peserta: search + foto zoom + checkin */}
+          <AttendeeTable
+            attendees={attendees}
+            checkedInCount={checkedInCount}
+            actions={{
+              updateAttendee,
+              checkinAttendee,
+              uncheckAttendee,
+              removeAttendee,
+            }}
+          />
         </CardContent>
       </Card>
     </div>
