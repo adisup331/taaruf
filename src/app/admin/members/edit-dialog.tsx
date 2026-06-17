@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { Pencil } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,9 +14,37 @@ import {
 import { ActionForm } from "@/components/admin-panel/action-form"
 import { SubmitButton } from "@/components/admin-panel/submit-button"
 import { adminUpdateMember } from "./actions"
-import { useState } from "react"
 
-export function EditMemberDialog({ profile }: { profile: any }) {
+interface Props {
+  profile: any
+  daerahList: { nama: string }[]
+  desaList: { nama: string }[]
+  kelompokList: { nama: string }[]
+}
+
+const Sel = ({ name, defaultValue, children, ...props }: any) => (
+  <select
+    name={name}
+    defaultValue={defaultValue || ""}
+    className="h-9 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+    {...props}
+  >
+    {children}
+  </select>
+)
+
+const Label = ({ children }: any) => (
+  <label className="text-xs font-bold uppercase text-muted-foreground">{children}</label>
+)
+
+const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div className="space-y-1">
+    <Label>{label}</Label>
+    {children}
+  </div>
+)
+
+export function EditMemberDialog({ profile, daerahList, desaList, kelompokList }: Props) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -33,118 +62,154 @@ export function EditMemberDialog({ profile }: { profile: any }) {
         <ActionForm
           action={adminUpdateMember}
           onSuccess={() => setOpen(false)}
-          className="space-y-6 py-4"
+          className="space-y-5 py-2"
         >
           <input type="hidden" name="userId" value={profile.userId} />
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1">
-              <label className="text-xs font-bold uppercase text-muted-foreground">Nama Lengkap</label>
+          {/* ── Data Utama ── */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Nama Lengkap">
               <Input name="namaLengkap" defaultValue={profile.namaLengkap} required />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold uppercase text-muted-foreground">Jenis Kelamin</label>
-              <select name="jenisKelamin" defaultValue={profile.jenisKelamin} className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+            </Field>
+            <Field label="Jenis Kelamin">
+              <Sel name="jenisKelamin" defaultValue={profile.jenisKelamin}>
                 <option value="IKHWAN">Laki-Laki</option>
                 <option value="AKHWAT">Perempuan</option>
-              </select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold uppercase text-muted-foreground">Tanggal Lahir</label>
+              </Sel>
+            </Field>
+            <Field label="Tanggal Lahir">
               <Input name="tanggalLahir" type="date" defaultValue={profile.tanggalLahir?.split('T')[0]} required />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold uppercase text-muted-foreground">Status Pernikahan</label>
-              <select name="statusPernikahan" defaultValue={profile.statusPernikahan || "Lajang"} className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+            </Field>
+            <Field label="Status Pernikahan">
+              <Sel name="statusPernikahan" defaultValue={profile.statusPernikahan}>
                 <option value="Lajang">Lajang</option>
                 <option value="Duda/Janda">Duda/Janda</option>
-              </select>
-            </div>
+              </Sel>
+            </Field>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 border-t pt-4">
-            <div className="space-y-1">
-              <label className="text-xs font-bold uppercase text-muted-foreground">Status Mubaligh</label>
-              <select name="statusMubaligh" defaultValue={profile.statusMubaligh || "Non Mubaligh"} className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
-                <option value="Non Mubaligh">Non Mubaligh</option>
-                <option value="Mubaligh">Mubaligh</option>
-              </select>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold uppercase text-muted-foreground">Pendidikan Terakhir</label>
-              <Input name="pendidikanTerakhir" defaultValue={profile.pendidikanTerakhir} />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold uppercase text-muted-foreground">Pekerjaan</label>
-              <Input name="pekerjaan" defaultValue={profile.pekerjaan} />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <label className="text-xs font-bold uppercase text-muted-foreground">Anak Ke</label>
-                <Input name="anakKe" type="number" defaultValue={profile.anakKe} />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-bold uppercase text-muted-foreground">Saudara</label>
-                <Input name="jumlahSaudara" type="number" defaultValue={profile.jumlahSaudara} />
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-3 border-t pt-4">
-            <p className="text-[10px] font-black uppercase text-emerald-600">Dapukan Saat Ini</p>
+          {/* ── Asal (Dropdown) ── */}
+          <div className="border-t pt-4 space-y-3">
+            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Asal (Biodata)</p>
             <div className="grid gap-3 sm:grid-cols-3">
-              <Input name="dapukanDaerah" defaultValue={profile.dapukanDaerah} placeholder="Daerah" />
-              <Input name="dapukanDesa" defaultValue={profile.dapukanDesa} placeholder="Desa" />
-              <Input name="dapukanKelompok" defaultValue={profile.dapukanKelompok} placeholder="Kelompok" />
+              <Field label="Asal Daerah">
+                <Sel name="asalDaerah" defaultValue={profile.asalDaerah}>
+                  <option value="">— Pilih —</option>
+                  {daerahList.map(d => <option key={d.nama} value={d.nama}>{d.nama}</option>)}
+                </Sel>
+              </Field>
+              <Field label="Asal Desa">
+                <Sel name="asalDesa" defaultValue={profile.asalDesa}>
+                  <option value="">— Pilih —</option>
+                  {desaList.map(d => <option key={d.nama} value={d.nama}>{d.nama}</option>)}
+                </Sel>
+              </Field>
+              <Field label="Asal Kelompok">
+                <Sel name="asalKelompok" defaultValue={profile.asalKelompok}>
+                  <option value="">— Pilih —</option>
+                  {kelompokList.map(d => <option key={d.nama} value={d.nama}>{d.nama}</option>)}
+                </Sel>
+              </Field>
             </div>
           </div>
 
-          <div className="space-y-3 border-t pt-4">
-            <p className="text-[10px] font-black uppercase text-emerald-600">Kondisi Orang Tua</p>
+          {/* ── Dapukan (Dropdown) ── */}
+          <div className="border-t pt-4 space-y-3">
+            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Dapukan Saat Ini</p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Field label="Dapukan Daerah">
+                <Sel name="dapukanDaerah" defaultValue={profile.dapukanDaerah}>
+                  <option value="">— Pilih —</option>
+                  {daerahList.map(d => <option key={d.nama} value={d.nama}>{d.nama}</option>)}
+                </Sel>
+              </Field>
+              <Field label="Dapukan Desa">
+                <Sel name="dapukanDesa" defaultValue={profile.dapukanDesa}>
+                  <option value="">— Pilih —</option>
+                  {desaList.map(d => <option key={d.nama} value={d.nama}>{d.nama}</option>)}
+                </Sel>
+              </Field>
+              <Field label="Dapukan Kelompok">
+                <Sel name="dapukanKelompok" defaultValue={profile.dapukanKelompok}>
+                  <option value="">— Pilih —</option>
+                  {kelompokList.map(d => <option key={d.nama} value={d.nama}>{d.nama}</option>)}
+                </Sel>
+              </Field>
+            </div>
+          </div>
+
+          {/* ── Latar Belakang ── */}
+          <div className="border-t pt-4 space-y-3">
+            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Latar Belakang</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Status Mubaligh">
+                <Sel name="statusMubaligh" defaultValue={profile.statusMubaligh}>
+                  <option value="">— Pilih —</option>
+                  <option value="Non Mubaligh">Non Mubaligh</option>
+                  <option value="Mubaligh">Mubaligh</option>
+                </Sel>
+              </Field>
+              <Field label="Pendidikan Terakhir">
+                <Input name="pendidikanTerakhir" defaultValue={profile.pendidikanTerakhir} placeholder="SD / SMA / S1..." />
+              </Field>
+              <Field label="Pekerjaan">
+                <Input name="pekerjaan" defaultValue={profile.pekerjaan} />
+              </Field>
+              <div className="grid grid-cols-2 gap-2">
+                <Field label="Anak Ke">
+                  <Input name="anakKe" type="number" defaultValue={profile.anakKe} />
+                </Field>
+                <Field label="Jml Saudara">
+                  <Input name="jumlahSaudara" type="number" defaultValue={profile.jumlahSaudara} />
+                </Field>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Kondisi Orang Tua ── */}
+          <div className="border-t pt-4 space-y-3">
+            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Kondisi Orang Tua</p>
             <div className="grid gap-4 sm:grid-cols-2">
-               <div className="space-y-2">
-                 <label className="text-xs font-medium">Ibu</label>
-                 <select name="kondisiIbu" defaultValue={profile.kondisiIbu || "Masih Hidup"} className="h-9 w-full rounded-md border text-sm">
-                    <option value="Masih Hidup">Masih Hidup</option>
-                    <option value="Almarhum">Almarhum</option>
-                 </select>
-                 <select name="statusJamaahIbu" defaultValue={profile.statusJamaahIbu || "Sudah Jamaah"} className="h-9 w-full rounded-md border text-sm">
-                    <option value="Sudah Jamaah">Sudah Jamaah</option>
-                    <option value="Belum Jamaah">Belum Jamaah</option>
-                 </select>
-               </div>
-               <div className="space-y-2">
-                 <label className="text-xs font-medium">Bapak</label>
-                 <select name="kondisiAyah" defaultValue={profile.kondisiAyah || "Masih Hidup"} className="h-9 w-full rounded-md border text-sm">
-                    <option value="Masih Hidup">Masih Hidup</option>
-                    <option value="Almarhum">Almarhum</option>
-                 </select>
-                 <select name="statusJamaahAyah" defaultValue={profile.statusJamaahAyah || "Sudah Jamaah"} className="h-9 w-full rounded-md border text-sm">
-                    <option value="Sudah Jamaah">Sudah Jamaah</option>
-                    <option value="Belum Jamaah">Belum Jamaah</option>
-                 </select>
-               </div>
+              <div className="space-y-2">
+                <Label>Ibu</Label>
+                <Sel name="kondisiIbu" defaultValue={profile.kondisiIbu}>
+                  <option value="">— Pilih —</option>
+                  <option value="Masih Hidup">Masih Hidup</option>
+                  <option value="Almarhum">Almarhum</option>
+                </Sel>
+                <Sel name="statusJamaahIbu" defaultValue={profile.statusJamaahIbu}>
+                  <option value="">— Status Jamaah —</option>
+                  <option value="Sudah Jamaah">Sudah Jamaah</option>
+                  <option value="Belum Jamaah">Belum Jamaah</option>
+                </Sel>
+              </div>
+              <div className="space-y-2">
+                <Label>Bapak</Label>
+                <Sel name="kondisiAyah" defaultValue={profile.kondisiAyah}>
+                  <option value="">— Pilih —</option>
+                  <option value="Masih Hidup">Masih Hidup</option>
+                  <option value="Almarhum">Almarhum</option>
+                </Sel>
+                <Sel name="statusJamaahAyah" defaultValue={profile.statusJamaahAyah}>
+                  <option value="">— Status Jamaah —</option>
+                  <option value="Sudah Jamaah">Sudah Jamaah</option>
+                  <option value="Belum Jamaah">Belum Jamaah</option>
+                </Sel>
+              </div>
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 border-t pt-4">
-             <div className="space-y-1">
-              <label className="text-xs font-bold uppercase text-muted-foreground">WhatsApp</label>
+          {/* ── Kontak ── */}
+          <div className="grid gap-3 sm:grid-cols-2 border-t pt-4">
+            <Field label="WhatsApp">
               <Input name="nomorHp" defaultValue={profile.nomorHp} required />
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-bold uppercase text-muted-foreground">Instagram</label>
-              <Input name="instagram" defaultValue={profile.instagram} />
-            </div>
+            </Field>
+            <Field label="Instagram">
+              <Input name="instagram" defaultValue={profile.instagram} placeholder="tanpa @" />
+            </Field>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-             <Input name="asalDaerah" defaultValue={profile.asalDaerah} placeholder="Asal Daerah" />
-             <Input name="asalDesa" defaultValue={profile.asalDesa} placeholder="Asal Desa" />
-             <Input name="asalKelompok" defaultValue={profile.asalKelompok} placeholder="Asal Kelompok" />
-          </div>
-
-          <div className="pt-4">
+          <div className="pt-2">
             <SubmitButton pendingText="Menyimpan..." className="w-full">
               Simpan Perubahan
             </SubmitButton>

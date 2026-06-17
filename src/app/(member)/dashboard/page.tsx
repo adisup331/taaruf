@@ -11,17 +11,12 @@ export default async function MemberDashboard() {
 
   if (!user) redirect('/login');
 
-  // 1 query: user + role
-  const { data: dbUser } = await supabase
-    .from('User')
-    .select('id, role')
-    .eq('email', user.email)
-    .maybeSingle();
+  // ⚡ Baca role dari metadata — tidak perlu query DB
+  const role = user.user_metadata?.role as string | undefined;
+  if (role === 'ADMIN') redirect('/admin/dashboard');
+  if (role === 'PHOTOGRAPHER') redirect('/admin/events/photography');
 
-  if (dbUser?.role === 'ADMIN') redirect('/admin/dashboard');
-  if (dbUser?.role === 'PHOTOGRAPHER') redirect('/admin/events/photography');
-
-  const uid = dbUser?.id || user.id;
+  const uid = user.id;
 
   // 2 query paralel: attendance + profile sendiri
   const [{ data: myAttendances }, { data: userProfile }] = await Promise.all([

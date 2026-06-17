@@ -7,10 +7,24 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ActionForm } from "@/components/admin-panel/action-form";
 import { SubmitButton } from "@/components/admin-panel/submit-button";
+import { SearchableSelect } from "@/components/member/SearchableSelect";
 import { updateProfile } from "./actions";
 
-export function ProfileView({ profile }: { profile: any }) {
+interface ProfileViewProps {
+  profile: any;
+  daerahList: string[];
+  desaList: string[];
+  kelompokList: string[];
+}
+
+export function ProfileView({ profile, daerahList, desaList, kelompokList }: ProfileViewProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [asalDaerah, setAsalDaerah] = useState(profile.asalDaerah || "");
+  const [asalDesa, setAsalDesa] = useState(profile.asalDesa || "");
+  const [asalKelompok, setAsalKelompok] = useState(profile.asalKelompok || "");
+  const [dapukanDaerah, setDapukanDaerah] = useState(profile.dapukanDaerah || "");
+  const [dapukanDesa, setDapukanDesa] = useState(profile.dapukanDesa || "");
+  const [dapukanKelompok, setDapukanKelompok] = useState(profile.dapukanKelompok || "");
 
   if (isEditing) {
     return (
@@ -85,18 +99,38 @@ export function ProfileView({ profile }: { profile: any }) {
           </div>
 
           <div className="space-y-4 border-t pt-4">
-            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full inline-block">Dapukan & Asal</p>
-
+            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full inline-block">Dapukan Saat Ini</p>
             <div className="grid grid-cols-1 gap-3">
-              <Input name="dapukanKelompok" defaultValue={profile.dapukanKelompok} placeholder="Dapukan Kelompok" className="rounded-xl border-gray-100" />
-              <Input name="dapukanDesa" defaultValue={profile.dapukanDesa} placeholder="Dapukan Desa" className="rounded-xl border-gray-100" />
-              <Input name="dapukanDaerah" defaultValue={profile.dapukanDaerah} placeholder="Dapukan Daerah" className="rounded-xl border-gray-100" />
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Dapukan Daerah</label>
+                <SearchableSelect name="dapukanDaerah" label="Dapukan Daerah" value={dapukanDaerah} onChange={setDapukanDaerah} options={daerahList} placeholder="Pilih atau tambah..." />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Dapukan Desa</label>
+                <SearchableSelect name="dapukanDesa" label="Dapukan Desa" value={dapukanDesa} onChange={setDapukanDesa} options={desaList} placeholder="Pilih atau tambah..." />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Dapukan Kelompok</label>
+                <SearchableSelect name="dapukanKelompok" label="Dapukan Kelompok" value={dapukanKelompok} onChange={setDapukanKelompok} options={kelompokList} placeholder="Pilih atau tambah..." />
+              </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3 border-t pt-3">
-              <Input name="asalDaerah" defaultValue={profile.asalDaerah} placeholder="Asal Daerah" className="rounded-xl border-gray-100" />
-              <Input name="asalDesa" defaultValue={profile.asalDesa} placeholder="Asal Desa" className="rounded-xl border-gray-100" />
-              <Input name="asalKelompok" defaultValue={profile.asalKelompok} placeholder="Asal Kelompok" className="rounded-xl border-gray-100" />
+            <div className="border-t pt-3 space-y-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Asal (Biodata)</p>
+              <div className="grid grid-cols-1 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Asal Daerah</label>
+                  <SearchableSelect name="asalDaerah" label="Asal Daerah" value={asalDaerah} onChange={setAsalDaerah} options={daerahList} placeholder="Pilih atau tambah..." />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Asal Desa</label>
+                  <SearchableSelect name="asalDesa" label="Asal Desa" value={asalDesa} onChange={setAsalDesa} options={desaList} placeholder="Pilih atau tambah..." />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Asal Kelompok</label>
+                  <SearchableSelect name="asalKelompok" label="Asal Kelompok" value={asalKelompok} onChange={setAsalKelompok} options={kelompokList} placeholder="Pilih atau tambah..." />
+                </div>
+              </div>
             </div>
           </div>
 

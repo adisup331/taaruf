@@ -9,11 +9,21 @@ export default async function MemberProfilePage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("Profile")
-    .select("id, userId, namaLengkap, jenisKelamin, tanggalLahir, asalDaerah, asalKelompok, asalDesa, nomorHp, instagram, statusMubaligh, pendidikanTerakhir, statusPernikahan, pekerjaan, anakKe, jumlahSaudara, dapukanKelompok, dapukanDesa, dapukanDaerah, kondisiIbu, kondisiAyah, statusJamaahIbu, statusJamaahAyah")
-    .eq("userId", user.id)
-    .maybeSingle();
+  const [
+    { data: profile },
+    { data: daerahList },
+    { data: desaList },
+    { data: kelompokList },
+  ] = await Promise.all([
+    supabase
+      .from("Profile")
+      .select("id, userId, namaLengkap, jenisKelamin, tanggalLahir, asalDaerah, asalKelompok, asalDesa, nomorHp, instagram, statusMubaligh, pendidikanTerakhir, statusPernikahan, pekerjaan, anakKe, jumlahSaudara, dapukanKelompok, dapukanDesa, dapukanDaerah, kondisiIbu, kondisiAyah, statusJamaahIbu, statusJamaahAyah")
+      .eq("userId", user.id)
+      .maybeSingle(),
+    supabase.from("Daerah").select("nama").order("nama"),
+    supabase.from("Desa").select("nama").order("nama"),
+    supabase.from("Kelompok").select("nama").order("nama"),
+  ]);
 
   if (!profile) redirect("/register-profile");
 
@@ -26,7 +36,12 @@ export default async function MemberProfilePage() {
         <LogoutButton className="text-gray-400 hover:text-red-500" />
       </div>
 
-      <ProfileView profile={profile} />
+      <ProfileView
+        profile={profile}
+        daerahList={(daerahList || []).map(d => d.nama)}
+        desaList={(desaList || []).map(d => d.nama)}
+        kelompokList={(kelompokList || []).map(d => d.nama)}
+      />
 
       <div className="bg-amber-50 border border-amber-100 rounded-[2rem] p-6">
         <p className="text-xs text-amber-700 leading-relaxed font-bold">

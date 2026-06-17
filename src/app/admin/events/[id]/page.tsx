@@ -21,37 +21,31 @@ import { AttendeeTable } from "./attendee-table";
 export default async function EventDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
 
-  const { data: event } = await supabase
-    .from("Event")
-    .select("*")
-    .eq("id", params.id)
-    .single();
+  // ⚡ Event + Attendees + All Members PARALEL
+  const [
+    { data: event },
+    { data: attendeesRaw },
+    { data: allMembers },
+  ] = await Promise.all([
+    supabase
+      .from("Event")
+      .select("id, title, slug, date, location, isActive, isPhotoBlurred, totalTables")
+      .eq("id", params.id)
+      .single(),
+    supabase
+      .from("EventAttendee")
+      .select(`
+        id, participantNumber, isVerified, isCheckedIn, checkedInAt, userId,
+        User ( id, email, name, Profile ( id, namaLengkap, jenisKelamin, fotoProfil ) )
+      `)
+      .eq("eventId", params.id),
+    supabase
+      .from("Profile")
+      .select("userId, namaLengkap, jenisKelamin")
+      .order("namaLengkap", { ascending: true }),
+  ]);
 
   if (!event) notFound();
-
-  // Attendees of this event
-  const { data: attendeesRaw } = await supabase
-    .from("EventAttendee")
-    .select(`
-      id,
-      participantNumber,
-      isVerified,
-      isCheckedIn,
-      checkedInAt,
-      userId,
-      User (
-        id,
-        email,
-        name,
-        Profile (
-          id,
-          namaLengkap,
-          jenisKelamin,
-          fotoProfil
-        )
-      )
-    `)
-    .eq("eventId", params.id);
 
   const attendees = attendeesRaw?.map((a: any) => {
     const userData = Array.isArray(a.User) ? a.User[0] : a.User;
@@ -64,12 +58,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
 
   const checkedInCount = attendees.filter((a: any) => a.isCheckedIn).length;
 
-  // Members NOT yet in this event (for manual add dropdown)
-  const attendeeUserIds = (attendees || []).map((a: any) => a.userId);
-  const { data: allMembers } = await supabase
-    .from("Profile")
-    .select("userId, namaLengkap, jenisKelamin")
-    .order("namaLengkap", { ascending: true });
+  const attendeeUserIds = attendees.map((a: any) => a.userId);
 
   const availableMembers = (allMembers || []).filter(
     (m: any) => !attendeeUserIds.includes(m.userId)

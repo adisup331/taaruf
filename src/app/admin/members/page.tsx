@@ -27,7 +27,7 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
   const q = searchParams.q || "";
 
   let query = supabase.from("Profile")
-    .select("id, userId, namaLengkap, jenisKelamin, tanggalLahir, asalDaerah, asalKelompok, asalDesa, nomorHp, instagram, fotoProfil")
+    .select("id, userId, namaLengkap, jenisKelamin, tanggalLahir, asalDaerah, asalKelompok, asalDesa, nomorHp, instagram, fotoProfil, statusMubaligh, pendidikanTerakhir, statusPernikahan, pekerjaan, anakKe, jumlahSaudara, dapukanKelompok, dapukanDesa, dapukanDaerah, kondisiIbu, kondisiAyah, statusJamaahIbu, statusJamaahAyah")
     .order("namaLengkap", { ascending: true });
   if (q) query = query.ilike("namaLengkap", `%${q}%`);
 
@@ -188,7 +188,12 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
                     <td className="px-6 py-3 text-right">
                        <div className="flex items-center justify-end gap-1">
                          <AddToEventButton userId={p.userId} events={activeEvents || []} />
-                         <EditMemberDialog profile={p} />
+                         <EditMemberDialog
+                           profile={p}
+                           daerahList={daerahList || []}
+                           desaList={desaList || []}
+                           kelompokList={kelompokList || []}
+                         />
                          <DeleteConfirmButton
                            title="Hapus Member?"
                            description={`Hapus "${p.namaLengkap}" beserta semua data taaruf & kehadiran event-nya. Aksi ini tidak bisa dibatalkan.`}

@@ -33,44 +33,46 @@ export default async function LiveMatchingPage({
 
   const selectedEvent = events?.find((e) => e.id === selectedEventId) || null;
 
-  let requestQuery = supabase
-    .from("TaarufRequest")
-    .select(`
-      id, status, tableNumber, senderId, receiverId,
-      sender:User!TaarufRequest_senderId_fkey ( Profile ( namaLengkap, asalKelompok ) ),
-      receiver:User!TaarufRequest_receiverId_fkey ( Profile ( namaLengkap, asalKelompok ) )
-    `)
-    .eq("eventId", selectedEventId)
-    .order("id", { ascending: false });
+  // ⚡ TaarufRequest + EventAttendees PARALEL
+  let requestsRaw: any[] = [];
+  let attendeeData: any[] = [];
 
-  if (query) {
-    // Search by full ID or last 6 chars (case insensitive handled by ilike/filter)
-    requestQuery = requestQuery.ilike("id", `%${query}%`);
+  if (selectedEventId) {
+    let rq = supabase
+      .from("TaarufRequest")
+      .select(`
+        id, status, tableNumber, senderId, receiverId,
+        sender:User!TaarufRequest_senderId_fkey ( Profile ( namaLengkap, asalKelompok ) ),
+        receiver:User!TaarufRequest_receiverId_fkey ( Profile ( namaLengkap, asalKelompok ) )
+      `)
+      .eq("eventId", selectedEventId)
+      .order("id", { ascending: false });
+
+    if (query) rq = rq.ilike("id", `%${query}%`);
+
+    const [rqRes, attRes] = await Promise.all([
+      rq,
+      supabase
+        .from("EventAttendee")
+        .select("userId, participantNumber")
+        .eq("eventId", selectedEventId),
+    ]);
+    requestsRaw = rqRes.data || [];
+    attendeeData = attRes.data || [];
   }
 
-  const { data: requestsRaw } = selectedEventId ? await requestQuery : { data: [] };
-
-  const requests = requestsRaw?.map((req: any) => {
+  const requests = requestsRaw.map((req: any) => {
     const senderUser = Array.isArray(req.sender) ? req.sender[0] : req.sender;
     const receiverUser = Array.isArray(req.receiver) ? req.receiver[0] : req.receiver;
-
     return {
       ...req,
       senderProfile: Array.isArray(senderUser?.Profile) ? senderUser.Profile[0] : senderUser?.Profile,
       receiverProfile: Array.isArray(receiverUser?.Profile) ? receiverUser.Profile[0] : receiverUser?.Profile,
     };
-  }) || [];
-
-  // Ambil nomor peserta semua attendee event ini → map userId → participantNumber
-  const { data: eventAttendees } = selectedEventId
-    ? await supabase
-        .from("EventAttendee")
-        .select("userId, participantNumber")
-        .eq("eventId", selectedEventId)
-    : { data: [] };
+  });
 
   const participantMap: Record<string, string> = {};
-  (eventAttendees || []).forEach((a: any) => {
+  attendeeData.forEach((a: any) => {
     if (a.participantNumber) participantMap[a.userId] = a.participantNumber;
   });
 
