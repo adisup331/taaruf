@@ -20,9 +20,9 @@ export default async function MemberProfilePage() {
       .select("id, userId, namaLengkap, jenisKelamin, tanggalLahir, asalDaerah, asalKelompok, asalDesa, nomorHp, instagram, statusMubaligh, pendidikanTerakhir, statusPernikahan, pekerjaan, anakKe, jumlahSaudara, dapukanKelompok, dapukanDesa, dapukanDaerah, kondisiIbu, kondisiAyah, statusJamaahIbu, statusJamaahAyah")
       .eq("userId", user.id)
       .maybeSingle(),
-    supabase.from("Daerah").select("nama").order("nama"),
-    supabase.from("Desa").select("nama").order("nama"),
-    supabase.from("Kelompok").select("nama").order("nama"),
+    supabase.from("Daerah").select("id, nama").order("nama"),
+    supabase.from("Desa").select("id, nama, daerahId").order("nama"),
+    supabase.from("Kelompok").select("id, nama, desaId").order("nama"),
   ]);
 
   if (!profile) redirect("/register-profile");
@@ -38,9 +38,9 @@ export default async function MemberProfilePage() {
 
       <ProfileView
         profile={profile}
-        daerahList={(daerahList || []).map(d => d.nama)}
-        desaList={(desaList || []).map(d => d.nama)}
-        kelompokList={(kelompokList || []).map(d => d.nama)}
+        daerahList={daerahList || []}
+        desaList={desaList || []}
+        kelompokList={kelompokList || []}
       />
 
       <div className="bg-amber-50 border border-amber-100 rounded-[2rem] p-6">
