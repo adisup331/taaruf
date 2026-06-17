@@ -17,7 +17,7 @@ export default async function MemberProfilePage() {
   ] = await Promise.all([
     supabase
       .from("Profile")
-      .select("id, userId, namaLengkap, jenisKelamin, tanggalLahir, asalDaerah, asalKelompok, asalDesa, nomorHp, instagram, statusMubaligh, pendidikanTerakhir, statusPernikahan, pekerjaan, anakKe, jumlahSaudara, dapukanKelompok, dapukanDesa, dapukanDaerah, kondisiIbu, kondisiAyah, statusJamaahIbu, statusJamaahAyah")
+      .select("id, userId, namaLengkap, jenisKelamin, tanggalLahir, asalDaerah, asalKelompok, asalDesa, nomorHp, instagram, fotoProfil, statusMubaligh, pendidikanTerakhir, statusPernikahan, pekerjaan, anakKe, jumlahSaudara, dapukanKelompok, dapukanDesa, dapukanDaerah, kondisiIbu, kondisiAyah, statusJamaahIbu, statusJamaahAyah")
       .eq("userId", user.id)
       .maybeSingle(),
     supabase.from("Daerah").select("id, nama").order("nama"),
@@ -43,10 +43,10 @@ export default async function MemberProfilePage() {
         kelompokList={kelompokList || []}
       />
 
-      <div className="bg-amber-50 border border-amber-100 rounded-[2rem] p-6">
-        <p className="text-xs text-amber-700 leading-relaxed font-bold">
-          <span className="block mb-1 uppercase tracking-widest text-[10px]">Pemberitahuan</span>
-          Foto profil kamu sengaja tidak ditampilkan di sini demi keamanan data pribadi sesuai prinsip Syar'i.
+      <div className="bg-emerald-50 border border-emerald-100 rounded-[2rem] p-5">
+        <p className="text-xs text-emerald-700 leading-relaxed font-bold">
+          <span className="block mb-1 uppercase tracking-widest text-[10px]">Info</span>
+          Foto Event hanya bisa diperbarui oleh Fotografer saat acara berlangsung. Kamu bisa mengganti foto profil utama dari menu Edit Profil.
         </p>
       </div>
     </div>

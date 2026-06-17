@@ -1,10 +1,14 @@
 "use client";
 
-import { useState } from "react";
-import { User, Pencil, Save, X, Calendar, MapPin, Home, Users, Instagram, Phone, Briefcase, GraduationCap, Heart, Baby, Users2 } from "lucide-react";
+import { useState, useRef } from "react";
+import Image from "next/image";
+import { User, Pencil, Save, X, Calendar, MapPin, Home, Users, Instagram, Phone, Briefcase, GraduationCap, Heart, Baby, Users2, Camera, Upload, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { cn, photoUrl } from "@/lib/utils";
 import { ActionForm } from "@/components/admin-panel/action-form";
 import { SubmitButton } from "@/components/admin-panel/submit-button";
 import { CascadingWilayah } from "@/components/member/CascadingWilayah";
@@ -19,6 +23,28 @@ interface ProfileViewProps {
 
 export function ProfileView({ profile, daerahList, desaList, kelompokList }: ProfileViewProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [fotoPreview, setFotoPreview] = useState(photoUrl(profile.fotoProfil));
+  const fileRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
+
+  async function handlePhotoUpload(file: File) {
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("photo", file);
+      const res = await fetch("/api/profile/upload-photo", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.message);
+      setFotoPreview(photoUrl(data.url));
+      toast.success("Foto profil berhasil diperbarui!");
+      router.refresh();
+    } catch (err: any) {
+      toast.error(err.message || "Gagal upload foto");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   if (isEditing) {
     return (
@@ -158,14 +184,44 @@ export function ProfileView({ profile, daerahList, desaList, kelompokList }: Pro
           </div>
 
           <div className="space-y-4 border-t pt-4">
+            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full inline-block">Foto Profil</p>
+            <div className="flex items-center gap-4">
+              <div className="relative h-20 w-20 rounded-2xl overflow-hidden border-2 border-gray-100 bg-gray-50 flex-shrink-0">
+                {fotoPreview ? (
+                  <Image src={fotoPreview} fill className="object-cover" alt="Foto" unoptimized />
+                ) : (
+                  <div className="flex items-center justify-center h-full"><Camera className="h-6 w-6 text-gray-300" /></div>
+                )}
+                {uploading && (
+                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                    <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs text-gray-500">Ganti foto profil utama kamu. Foto Event tidak bisa diubah dari sini.</p>
+                <label className="inline-flex items-center gap-2 cursor-pointer rounded-xl bg-gray-50 border border-gray-100 px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 transition-colors">
+                  <Upload className="h-4 w-4" /> Ganti Foto
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => {
+                      const f = e.target.files?.[0];
+                      if (f) handlePhotoUpload(f);
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4 border-t pt-4">
             <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full inline-block">Kontak</p>
             <div className="grid grid-cols-2 gap-4">
               <Input name="nomorHp" defaultValue={profile.nomorHp} required placeholder="WhatsApp" className="rounded-xl border-gray-100" />
               <Input name="instagram" defaultValue={profile.instagram} placeholder="Instagram" className="rounded-xl border-gray-100" />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Update Foto Profil Utama</label>
-              <Input name="fotoProfil" type="file" accept="image/*" className="rounded-xl border-gray-100" />
             </div>
           </div>
 
@@ -182,7 +238,15 @@ export function ProfileView({ profile, daerahList, desaList, kelompokList }: Pro
   return (
     <div className="space-y-6 pb-20">
       <div className="bg-white rounded-[2.5rem] border border-gray-100 p-8 shadow-xl shadow-gray-100/50 space-y-8 relative overflow-hidden">
-        <div className="space-y-2 text-center">
+        <div className="space-y-3 text-center">
+          {/* Foto Profil */}
+          <div className="relative mx-auto h-24 w-24 rounded-full overflow-hidden border-4 border-emerald-50 shadow-lg bg-gray-50">
+            {fotoPreview ? (
+              <Image src={fotoPreview} fill className="object-cover" alt="Foto Profil" unoptimized />
+            ) : (
+              <div className="flex items-center justify-center h-full"><Camera className="h-8 w-8 text-gray-300" /></div>
+            )}
+          </div>
           <h2 className="text-3xl font-black text-gray-900">{profile.namaLengkap}</h2>
           <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-none font-bold px-4 py-1.5 rounded-full">
             {profile.jenisKelamin === "IKHWAN" ? "Laki-Laki" : "Perempuan"}
