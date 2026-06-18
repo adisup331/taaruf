@@ -1,11 +1,11 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn, photoUrl } from "@/lib/utils";
 import { useState, useEffect } from "react";
-import { createPortal } from "react-dom";
+
 import { Dialog, DialogContent, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Maximize2, X, ChevronDown, MapPin, Home, Users, Calendar, ArrowLeft } from "lucide-react";
 import { Badge } from "../ui/badge";
@@ -40,9 +40,9 @@ export function ProfileCard({ profile, eventId, isEventBlurActive, targetUserId,
     : lockType === "pending"
     ? "Sedang Diproses Orang Lain"
     : alreadyRequested
-    ? "Sudah Diminta ✓"
+    ? "Sudah Diminta âœ“"
     : sent
-    ? "Terkirim ✓"
+    ? "Terkirim âœ“"
     : loading
     ? "Memproses..."
     : "Lancarkan";
@@ -61,7 +61,7 @@ export function ProfileCard({ profile, eventId, isEventBlurActive, targetUserId,
     <>
     <Card className="w-full overflow-hidden relative border-none shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-[2.5rem] group bg-white">
       <Dialog>
-        {/* Cover foto — klik buka detail */}
+        {/* Cover foto â€” klik buka detail */}
         <DialogTrigger asChild>
           <div className="relative h-[440px] cursor-pointer overflow-hidden">
             <Image
@@ -102,6 +102,8 @@ export function ProfileCard({ profile, eventId, isEventBlurActive, targetUserId,
         <DialogContent
           className="max-w-md w-full h-[95vh] p-0 overflow-y-auto bg-white border-none sm:rounded-[2.5rem] gap-0"
           onPointerDownOutside={(e) => { if (zoomImage) e.preventDefault(); }}
+          onEscapeKeyDown={(e) => { if (zoomImage) e.preventDefault(); }}
+          onInteractOutside={(e) => { if (zoomImage) e.preventDefault(); }}
         >
 
           {/* Header with close */}
@@ -112,7 +114,7 @@ export function ProfileCard({ profile, eventId, isEventBlurActive, targetUserId,
             </DialogClose>
           </div>
 
-          {/* Foto grid — di atas semua */}
+          {/* Foto grid â€” di atas semua */}
           {!isEventBlurActive && (profile.fotoProfil || profile.fotoEvent) && (
             <div className="px-6 pt-5">
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Foto</p>
@@ -171,7 +173,7 @@ export function ProfileCard({ profile, eventId, isEventBlurActive, targetUserId,
             </div>
           )}
 
-          {/* Daerah Sambung — section sendiri */}
+          {/* Daerah Sambung â€” section sendiri */}
           {(profile.daerahSambung || profile.desaSambung || profile.kelompokSambung) && (
             <div className="px-6 pt-5">
               <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-2">Daerah Sambung</p>
@@ -203,6 +205,31 @@ export function ProfileCard({ profile, eventId, isEventBlurActive, targetUserId,
               {buttonLabel}
             </Button>
           </div>
+          {zoomImage && (
+            <div className="absolute inset-0 z-50 bg-black/95 flex flex-col rounded-[2.5rem] overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-4">
+                <button
+                  type="button"
+                  className="flex items-center gap-2 bg-white px-5 py-3 rounded-2xl font-bold text-gray-900 hover:bg-gray-100 transition-all shadow-lg"
+                  onClick={() => setZoomImage(null)}
+                >
+                  <ArrowLeft className="h-5 w-5" /> Kembali
+                </button>
+                <button
+                  type="button"
+                  className="flex items-center justify-center h-12 w-12 bg-white hover:bg-gray-100 text-gray-900 rounded-full font-bold transition-all shadow-lg"
+                  onClick={() => setZoomImage(null)}
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+              <div className="flex-1 flex items-center justify-center p-4">
+                <div className="relative w-full max-w-md aspect-[3/4]">
+                  <Image src={zoomImage} fill className="object-contain" alt="Zoom" unoptimized />
+                </div>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -245,20 +272,7 @@ export function ProfileCard({ profile, eventId, isEventBlurActive, targetUserId,
         </Button>
       </CardFooter>
     </Card>
-      {zoomImage && typeof window === "object" && createPortal(
-        <div className="fixed inset-0 z-[9999] flex flex-col bg-black/95">
-          <div className="flex items-center justify-between px-6 py-4">
-            <button className="flex items-center gap-2 text-white/80 hover:text-white text-sm font-bold" onClick={() => setZoomImage(null)}>
-              <ArrowLeft className="h-5 w-5" /> Kembali
-            </button>
-            <button className="text-white/80 hover:text-white text-2xl" onClick={() => setZoomImage(null)}>✕</button>
-          </div>
-          <div className="relative flex-1 m-6" onClick={() => setZoomImage(null)}>
-            <Image src={zoomImage} fill className="object-contain" alt="Zoom" unoptimized />
-          </div>
-        </div>,
-        document.body
-      )}
+
     </>
   );
 }
@@ -271,3 +285,4 @@ function InfoRow({ icon, label, value, last = false }: { icon: React.ReactNode; 
     </div>
   );
 }
+
