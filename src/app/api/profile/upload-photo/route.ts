@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 
 export async function POST(request: Request) {
@@ -19,7 +20,9 @@ export async function POST(request: Request) {
   const fileName = `member-${user.id}-${Date.now()}.${fileExt}`;
   const path = `profiles/${fileName}`;
 
-  const { error: uploadError } = await supabase.storage
+  // Use admin client for storage upload (bypass RLS)
+  const adminClient = createAdminClient();
+  const { error: uploadError } = await adminClient.storage
     .from("pnkb")
     .upload(path, file, { upsert: true, contentType: file.type });
 
@@ -27,11 +30,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, message: `Upload gagal: ${uploadError.message}` }, { status: 500 });
   }
 
-  const { data: pub } = supabase.storage.from("pnkb").getPublicUrl(path);
+  const { data: pub } = adminClient.storage.from("pnkb").getPublicUrl(path);
   const versionedUrl = `${pub.publicUrl}?v=${Date.now()}`;
 
   // Update HANYA fotoProfil, bukan fotoEvent
-  const { error: dbError } = await supabase
+  const { error: dbError } = await adminClient
     .from("Profile")
     .update({ fotoProfil: versionedUrl })
     .eq("userId", user.id);

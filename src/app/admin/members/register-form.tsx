@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { ActionForm } from '@/components/admin-panel/action-form';
 import { SubmitButton } from '@/components/admin-panel/submit-button';
@@ -180,17 +180,17 @@ export function RegisterMemberForm({
   const [sambungFilteredDesa, setSambungFilteredDesa] = useState<{ id: string; nama: string }[]>(desaList || []);
   const [sambungFilteredKelompok, setSambungFilteredKelompok] = useState<{ id: string; nama: string }[]>(kelompokList || []);
   const [createdProfileId, setCreatedProfileId] = useState<string | null>(null);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const photoFileRef = useRef<File | null>(null);
 
   // Auto-upload setelah member berhasil dibuat
   useEffect(() => {
-    if (createdProfileId && photoFile) {
+    if (createdProfileId && photoFileRef.current) {
       (async () => {
         setUploading(true);
         const fd = new FormData();
-        fd.append("photo", photoFile);
+        fd.append("photo", photoFileRef.current!);
         fd.append("profileId", createdProfileId);
         fd.append("type", "fotoProfil");
         try { const r = await fetch("/api/admin/members/upload-photo", { method: "POST", body: fd }); const d = await r.json(); if (d.ok) toast.success("Foto profil berhasil diupload!"); else toast.error(d.message || "Gagal upload"); } catch { toast.error("Gagal upload"); }
@@ -253,8 +253,7 @@ export function RegisterMemberForm({
     <div>
     <ActionForm action={action} resetOnSuccess onSuccess={(s) => {
       if (s && s.profileId) setCreatedProfileId(s.profileId);
-      // Reset photo
-      setPhotoFile(null);
+      // Reset preview — ref file tetap hidup sampai useEffect upload
       setPhotoPreview(null);
       // Reset cascading asal
       setDaerahId(""); setDaerahNama("");
@@ -347,13 +346,13 @@ export function RegisterMemberForm({
           <p className="text-xs text-gray-400">Upload otomatis setelah member dibuat</p>
         </div>
         <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border bg-white px-4 py-2 text-xs font-bold hover:bg-gray-50">
-          <Upload className="h-3.5 w-3.5" /> {photoFile ? "Ganti" : "Pilih"}
+          <Upload className="h-3.5 w-3.5" /> {photoFileRef.current ? "Ganti" : "Pilih"}
           <input type="file" accept="image/*" className="hidden" onChange={e => {
-            const f = e.target.files?.[0]; if (f) { setPhotoFile(f); const r = new FileReader(); r.onload = ev => setPhotoPreview(ev.target?.result as string); r.readAsDataURL(f); } e.target.value = "";
+            const f = e.target.files?.[0]; if (f) { photoFileRef.current = f; const r = new FileReader(); r.onload = ev => setPhotoPreview(ev.target?.result as string); r.readAsDataURL(f); } e.target.value = "";
           }} />
         </label>
-        {photoFile && !uploading && (
-          <button type="button" onClick={() => { setPhotoFile(null); setPhotoPreview(null); }} className="text-xs text-red-500 font-bold">✕</button>
+        {photoFileRef.current && !uploading && (
+          <button type="button" onClick={() => { photoFileRef.current = null; setPhotoPreview(null); }} className="text-xs text-red-500 font-bold">✕</button>
         )}
       </div>
 
