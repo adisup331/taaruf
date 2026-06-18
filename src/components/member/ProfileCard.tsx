@@ -206,7 +206,7 @@ export function ProfileCard({ profile, eventId, isEventBlurActive, targetUserId,
             </Button>
           </div>
           {zoomImage && (
-            <div className="absolute inset-0 z-50 bg-black/95 flex flex-col rounded-[2.5rem] overflow-hidden">
+            <div className="absolute inset-0 z-50 bg-white flex flex-col rounded-[2.5rem] overflow-hidden">
               <div className="flex items-center justify-between px-4 py-4">
                 <button
                   type="button"
