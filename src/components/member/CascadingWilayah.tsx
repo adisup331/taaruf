@@ -229,9 +229,9 @@ export function CascadingWilayah({
     setKelompok(val);
   }, []);
 
-  const dKey = prefix === "asal" ? "asalDaerah" : "dapukanDaerah";
-  const dsKey = prefix === "asal" ? "asalDesa" : "dapukanDesa";
-  const kKey = prefix === "asal" ? "asalKelompok" : "dapukanKelompok";
+  const dKey = prefix === "asal" ? "asalDaerah" : prefix === "sambung" ? "daerahSambung" : "dapukanDaerah";
+  const dsKey = prefix === "asal" ? "asalDesa" : prefix === "sambung" ? "desaSambung" : "dapukanDesa";
+  const kKey = prefix === "asal" ? "asalKelompok" : prefix === "sambung" ? "kelompokSambung" : "dapukanKelompok";
 
   return (
     <div className="grid grid-cols-1 gap-3">

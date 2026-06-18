@@ -1,9 +1,10 @@
-import { createClient } from "@/lib/supabase/server";
+﻿import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Search } from "lucide-react";
 import { genderLabel, photoUrl } from "@/lib/utils";
 import { type ActionResult } from "@/lib/action-result";
@@ -11,9 +12,10 @@ import { EditMemberDialog } from "./edit-dialog";
 import { AddToEventButton } from "./add-to-event";
 import { DeleteConfirmButton } from "@/components/admin-panel/delete-confirm-button";
 import { RegisterMemberForm } from "./register-form";
+import { GenderFilter } from "./gender-filter";
 
 interface MembersPageProps {
-  searchParams: { q?: string };
+  searchParams: { q?: string; jenisKelamin?: string };
 }
 
 function calculateAge(dob: string | null) {
@@ -25,18 +27,24 @@ function calculateAge(dob: string | null) {
 export default async function AdminMembersPage({ searchParams }: MembersPageProps) {
   const supabase = createClient();
   const q = searchParams.q || "";
+  const jenisKelamin = searchParams.jenisKelamin || "";
 
   let query = supabase.from("Profile")
-    .select("id, userId, namaLengkap, jenisKelamin, tanggalLahir, asalDaerah, asalKelompok, asalDesa, nomorHp, instagram, fotoProfil, statusMubaligh, pendidikanTerakhir, statusPernikahan, pekerjaan, anakKe, jumlahSaudara, dapukanKelompok, dapukanDesa, dapukanDaerah, kondisiIbu, kondisiAyah, statusJamaahIbu, statusJamaahAyah")
+    .select("id, userId, namaLengkap, jenisKelamin, tanggalLahir, asalDaerah, asalKelompok, asalDesa, nomorHp, instagram, fotoProfil, fotoEvent, statusMubaligh, pendidikanTerakhir, statusPernikahan, pekerjaan, anakKe, jumlahSaudara, dapukanKelompok, dapukanDesa, dapukanDaerah, kondisiIbu, kondisiAyah, statusJamaahIbu, statusJamaahAyah, daerahSambung, desaSambung, kelompokSambung")
     .order("namaLengkap", { ascending: true });
-  if (q) query = query.ilike("namaLengkap", `%${q}%`);
+  if (q) {
+    query = query.or(
+      `namaLengkap.ilike.%${q}%,daerahSambung.ilike.%${q}%,desaSambung.ilike.%${q}%,kelompokSambung.ilike.%${q}%`
+    );
+  }
+  if (jenisKelamin) query = query.eq("jenisKelamin", jenisKelamin);
 
   const [{ data: profiles }, { data: daerahList }, { data: desaList }, { data: kelompokList }, { data: activeEvents }] =
     await Promise.all([
       query,
-      supabase.from("Daerah").select("nama").order("nama"),
-      supabase.from("Desa").select("nama").order("nama"),
-      supabase.from("Kelompok").select("nama").order("nama"),
+      supabase.from("Daerah").select("id, nama").order("nama"),
+      supabase.from("Desa").select("id, nama, daerahId").order("nama"),
+      supabase.from("Kelompok").select("id, nama, desaId").order("nama"),
       supabase.from("Event").select("id, title").eq("isActive", true).order("date", { ascending: false }),
     ]);
 
@@ -71,36 +79,42 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
     const g = (k: string) => (formData.get(k) as string)?.trim() || undefined;
     const gInt = (k: string) => { const v = formData.get(k) as string; return v ? parseInt(v) : undefined; };
 
-    const { error: profileErr } = await supabase.from("Profile").insert({
-      userId: newUser.id,
-      namaLengkap,
-      jenisKelamin,
-      tanggalLahir: new Date(tanggalLahir).toISOString(),
-      asalDaerah: asalDaerah || "-",
-      asalKelompok: asalKelompok || "-",
-      asalDesa: asalDesa || "-",
-      nomorHp,
-      instagram,
-      // Data lengkap (opsional)
-      statusMubaligh: g("statusMubaligh"),
-      pendidikanTerakhir: g("pendidikanTerakhir"),
-      statusPernikahan: g("statusPernikahan"),
-      pekerjaan: g("pekerjaan"),
-      anakKe: gInt("anakKe"),
-      jumlahSaudara: gInt("jumlahSaudara"),
-      dapukanDaerah: g("dapukanDaerah"),
-      dapukanDesa: g("dapukanDesa"),
-      dapukanKelompok: g("dapukanKelompok"),
-      kondisiIbu: g("kondisiIbu"),
-      statusJamaahIbu: g("statusJamaahIbu"),
-      kondisiAyah: g("kondisiAyah"),
-      statusJamaahAyah: g("statusJamaahAyah"),
-    });
+    const { data: newProfile, error: profileErr } = await supabase
+      .from("Profile")
+      .insert({
+        userId: newUser.id,
+        namaLengkap,
+        jenisKelamin,
+        tanggalLahir: new Date(tanggalLahir).toISOString(),
+        asalDaerah: asalDaerah || "-",
+        asalKelompok: asalKelompok || "-",
+        asalDesa: asalDesa || "-",
+        nomorHp,
+        instagram,
+        statusMubaligh: g("statusMubaligh"),
+        pendidikanTerakhir: g("pendidikanTerakhir"),
+        statusPernikahan: g("statusPernikahan"),
+        pekerjaan: g("pekerjaan"),
+        anakKe: gInt("anakKe"),
+        jumlahSaudara: gInt("jumlahSaudara"),
+        dapukanDaerah: g("dapukanDaerah"),
+        dapukanDesa: g("dapukanDesa"),
+        dapukanKelompok: g("dapukanKelompok"),
+        daerahSambung: g("daerahSambung"),
+        desaSambung: g("desaSambung"),
+        kelompokSambung: g("kelompokSambung"),
+        kondisiIbu: g("kondisiIbu"),
+        statusJamaahIbu: g("statusJamaahIbu"),
+        kondisiAyah: g("kondisiAyah"),
+        statusJamaahAyah: g("statusJamaahAyah"),
+      })
+      .select("id")
+      .single();
 
     if (profileErr) return { ok: false, message: `Gagal buat profil: ${profileErr.message}` };
 
     revalidatePath("/admin/members");
-    return { ok: true, message: `Member "${namaLengkap}" berhasil didaftarkan.` };
+    return { ok: true, message: `Member "${namaLengkap}" berhasil didaftarkan.`, profileId: newProfile.id };
   }
 
   async function deleteMember(userId: string): Promise<ActionResult> {
@@ -120,15 +134,9 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Data Member</h2>
-          <p className="text-muted-foreground">Daftar member yang bisa diikutkan ke banyak event.</p>
-        </div>
-        <form className="relative w-full md:w-72">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input name="q" placeholder="Cari nama member..." defaultValue={q} className="pl-9" />
-        </form>
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">Data Member</h2>
+        <p className="text-muted-foreground">Daftar member yang bisa diikutkan ke banyak event.</p>
       </div>
 
       {/* Daftarkan member baru */}
@@ -147,8 +155,15 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 space-y-0 pb-4">
           <CardTitle className="text-base">{profiles?.length || 0} Member</CardTitle>
+          <div className="flex items-center gap-2">
+            <form className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input name="q" placeholder="Cari nama..." defaultValue={q} className="pl-9 h-9 w-48" />
+            </form>
+            <GenderFilter />
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -160,6 +175,7 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
                   <th className="px-6 py-3 font-medium">Usia</th>
                   <th className="px-6 py-3 font-medium">Asal Daerah</th>
                   <th className="px-6 py-3 font-medium">Kelompok / Desa</th>
+                  <th className="px-6 py-3 font-medium">Daerah Sambung</th>
                   <th className="px-6 py-3 font-medium text-right">Aksi</th>
                 </tr>
               </thead>
@@ -168,12 +184,27 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
                   <tr key={p.id} className="border-b transition-colors hover:bg-muted/50">
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9">
-                          {photoUrl(p.fotoProfil) && <AvatarImage src={photoUrl(p.fotoProfil)!} alt={p.namaLengkap} />}
-                          <AvatarFallback className="text-xs">
-                            {p.namaLengkap?.slice(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Avatar className="h-9 w-9 cursor-pointer hover:ring-2 hover:ring-emerald-300 transition-all">
+                              {photoUrl(p.fotoProfil) ? (
+                                <AvatarImage src={photoUrl(p.fotoProfil)!} alt={p.namaLengkap} className="object-cover" />
+                              ) : (
+                                <AvatarFallback className="text-xs bg-muted cursor-pointer">
+                                  {p.namaLengkap?.slice(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
+                          </DialogTrigger>
+                          {photoUrl(p.fotoProfil) && (
+                            <DialogContent className="max-w-lg p-2 bg-black border-none rounded-2xl">
+                              <div className="relative w-full aspect-[3/4] rounded-xl overflow-hidden">
+                                <img src={photoUrl(p.fotoProfil)!} alt={p.namaLengkap} className="w-full h-full object-contain" />
+                              </div>
+                              <p className="text-center text-white text-sm font-bold py-2">{p.namaLengkap}</p>
+                            </DialogContent>
+                          )}
+                        </Dialog>
                         <span className="font-medium">{p.namaLengkap}</span>
                       </div>
                     </td>
@@ -185,6 +216,9 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
                     <td className="px-6 py-3">{calculateAge(p.tanggalLahir)} Tahun</td>
                     <td className="px-6 py-3">{p.asalDaerah}</td>
                     <td className="px-6 py-3 text-muted-foreground">{p.asalKelompok} / {p.asalDesa}</td>
+                    <td className="px-6 py-3 text-muted-foreground">
+                      {[p.daerahSambung, p.desaSambung, p.kelompokSambung].filter(Boolean).join(" / ") || <span className="text-xs italic">-</span>}
+                    </td>
                     <td className="px-6 py-3 text-right">
                        <div className="flex items-center justify-end gap-1">
                          <AddToEventButton userId={p.userId} events={activeEvents || []} />

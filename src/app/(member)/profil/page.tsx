@@ -17,7 +17,7 @@ export default async function MemberProfilePage() {
   ] = await Promise.all([
     supabase
       .from("Profile")
-      .select("id, userId, namaLengkap, jenisKelamin, tanggalLahir, asalDaerah, asalKelompok, asalDesa, nomorHp, instagram, fotoProfil, statusMubaligh, pendidikanTerakhir, statusPernikahan, pekerjaan, anakKe, jumlahSaudara, dapukanKelompok, dapukanDesa, dapukanDaerah, kondisiIbu, kondisiAyah, statusJamaahIbu, statusJamaahAyah")
+      .select("id, userId, namaLengkap, jenisKelamin, tanggalLahir, asalDaerah, asalKelompok, asalDesa, nomorHp, instagram, fotoProfil, statusMubaligh, pendidikanTerakhir, statusPernikahan, pekerjaan, anakKe, jumlahSaudara, dapukanKelompok, dapukanDesa, dapukanDaerah, daerahSambung, desaSambung, kelompokSambung, kondisiIbu, kondisiAyah, statusJamaahIbu, statusJamaahAyah")
       .eq("userId", user.id)
       .maybeSingle(),
     supabase.from("Daerah").select("id, nama").order("nama"),

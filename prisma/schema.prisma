@@ -63,6 +63,9 @@ model Profile {
   dapukanKelompok   String?
   dapukanDesa       String?
   dapukanDaerah     String?
+  daerahSambung     String?
+  desaSambung       String?
+  kelompokSambung   String?
   kondisiIbu        String?  // Hidup / Almarhum
   kondisiAyah       String?  // Hidup / Almarhum
   statusJamaahIbu   String?  // Sudah Jamaah / Belum Jamaah

@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { toast } from "sonner"
-import { Plus, Trash2, Pencil, Check, X, Loader2 } from "lucide-react"
+import { Plus, Trash2, Pencil, Check, X, Loader2, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -44,7 +44,12 @@ export function MasterDataSection({
   const [selectedParentId, setSelectedParentId] = React.useState("")
   const [editingId, setEditingId] = React.useState<string | null>(null)
   const [editValue, setEditValue] = React.useState("")
+  const [search, setSearch] = React.useState("")
   const [pending, startTransition] = React.useTransition()
+
+  const filteredItems = search
+    ? items.filter(i => i.nama.toLowerCase().includes(search.toLowerCase()))
+    : items
 
   const fire = (p: Promise<ActionResult>, after?: () => void) =>
     startTransition(async () => {
@@ -108,14 +113,20 @@ export function MasterDataSection({
 
         {/* Daftar Data */}
         <div className="border rounded-md flex-1 overflow-hidden flex flex-col">
-          <div className="bg-muted/50 px-4 py-2 text-xs font-semibold text-muted-foreground border-b flex justify-between">
-            <span>Nama {title}</span>
-            <span>Aksi</span>
+          {/* Search */}
+          <div className="relative px-4 py-2 border-b">
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder={`Cari ${title}...`}
+              className="w-full h-8 pl-7 pr-3 text-xs rounded-md border bg-background outline-none focus:ring-1 focus:ring-ring"
+            />
           </div>
           <div className="overflow-y-auto max-h-[400px] flex-1">
             <table className="w-full text-sm">
               <tbody>
-                {items.map((item) => {
+                {filteredItems.map((item) => {
                   // Jika ada parents, cari nama parent-nya untuk ditampilkan
                   const parentName = parents?.find(p => p.id === item.parentId)?.nama
 
@@ -196,10 +207,10 @@ export function MasterDataSection({
                     </tr>
                   )
                 })}
-                {items.length === 0 && (
+                {filteredItems.length === 0 && (
                   <tr>
                     <td colSpan={2} className="px-4 py-8 text-center text-muted-foreground text-xs">
-                      Belum ada data {title.toLowerCase()}.
+                      {search ? `Tidak ditemukan "${search}"` : `Belum ada data ${title.toLowerCase()}.`}
                     </td>
                   </tr>
                 )}

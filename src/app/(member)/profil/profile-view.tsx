@@ -147,6 +147,20 @@ export function ProfileView({ profile, daerahList, desaList, kelompokList }: Pro
           </div>
 
           <div className="space-y-4 border-t pt-4">
+            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full inline-block">Daerah Sambung</p>
+            <CascadingWilayah
+              prefix="sambung"
+              labelPrefix="Sambung"
+              initialDaerah={profile.daerahSambung || ""}
+              initialDesa={profile.desaSambung || ""}
+              initialKelompok={profile.kelompokSambung || ""}
+              daerahList={daerahList}
+              desaList={desaList}
+              kelompokList={kelompokList}
+            />
+          </div>
+
+          <div className="space-y-4 border-t pt-4">
             <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full inline-block">Kondisi Orang Tua</p>
 
             <div className="grid grid-cols-2 gap-4">
@@ -322,6 +336,24 @@ export function ProfileView({ profile, daerahList, desaList, kelompokList }: Pro
               <div className="space-y-1">
                  <p className="text-[10px] font-bold text-gray-400 uppercase">Kelompok</p>
                  <p className="text-xs font-bold text-gray-700">{profile.dapukanKelompok || "-"}</p>
+              </div>
+           </div>
+        </div>
+
+        <div className="bg-white rounded-3xl border border-gray-50 p-6 shadow-sm space-y-4">
+           <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Daerah Sambung</p>
+           <div className="grid grid-cols-3 gap-2">
+              <div className="space-y-1">
+                 <p className="text-[10px] font-bold text-gray-400 uppercase">Daerah</p>
+                 <p className="text-xs font-bold text-gray-700">{profile.daerahSambung || "-"}</p>
+              </div>
+              <div className="space-y-1">
+                 <p className="text-[10px] font-bold text-gray-400 uppercase">Desa</p>
+                 <p className="text-xs font-bold text-gray-700">{profile.desaSambung || "-"}</p>
+              </div>
+              <div className="space-y-1">
+                 <p className="text-[10px] font-bold text-gray-400 uppercase">Kelompok</p>
+                 <p className="text-xs font-bold text-gray-700">{profile.kelompokSambung || "-"}</p>
               </div>
            </div>
         </div>

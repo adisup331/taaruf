@@ -28,6 +28,9 @@ export async function updateProfile(_prev: ActionResult, formData: FormData): Pr
   const dapukanKelompok = formData.get("dapukanKelompok") as string;
   const dapukanDesa = formData.get("dapukanDesa") as string;
   const dapukanDaerah = formData.get("dapukanDaerah") as string;
+  const daerahSambung = formData.get("daerahSambung") as string;
+  const desaSambung = formData.get("desaSambung") as string;
+  const kelompokSambung = formData.get("kelompokSambung") as string;
   const kondisiIbu = formData.get("kondisiIbu") as string;
   const kondisiAyah = formData.get("kondisiAyah") as string;
   const statusJamaahIbu = formData.get("statusJamaahIbu") as string;
@@ -76,6 +79,9 @@ export async function updateProfile(_prev: ActionResult, formData: FormData): Pr
       dapukanKelompok,
       dapukanDesa,
       dapukanDaerah,
+      daerahSambung,
+      desaSambung,
+      kelompokSambung,
       kondisiIbu,
       kondisiAyah,
       statusJamaahIbu,
