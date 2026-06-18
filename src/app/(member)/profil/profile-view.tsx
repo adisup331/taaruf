@@ -24,26 +24,49 @@ interface ProfileViewProps {
 export function ProfileView({ profile, daerahList, desaList, kelompokList }: ProfileViewProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [fotoPreview, setFotoPreview] = useState(photoUrl(profile.fotoProfil));
   const fileRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  async function handlePhotoUpload(file: File) {
+  function uploadWithProgress(file: File) {
     setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append("photo", file);
-      const res = await fetch("/api/profile/upload-photo", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.message);
-      setFotoPreview(photoUrl(data.url));
-      toast.success("Foto profil berhasil diperbarui!");
-      router.refresh();
-    } catch (err: any) {
-      toast.error(err.message || "Gagal upload foto");
-    } finally {
+    setUploadProgress(0);
+    const fd = new FormData();
+    fd.append("photo", file);
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/profile/upload-photo");
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) setUploadProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (data.ok) {
+            setFotoPreview(photoUrl(data.url));
+            toast.success("Foto profil berhasil diperbarui!");
+            setUploadProgress(100);
+            setTimeout(() => { setUploading(false); setUploadProgress(0); }, 500);
+            router.refresh();
+            return;
+          }
+          throw new Error(data.message);
+        } catch (err: any) {
+          toast.error(err.message || "Gagal upload foto");
+        }
+      } else {
+        toast.error("Gagal upload foto (server error)");
+      }
       setUploading(false);
-    }
+      setUploadProgress(0);
+    };
+    xhr.onerror = () => {
+      toast.error("Gagal upload foto (network error)");
+      setUploading(false);
+      setUploadProgress(0);
+    };
+    xhr.send(fd);
   }
 
   if (isEditing) {
@@ -197,10 +220,11 @@ export function ProfileView({ profile, daerahList, desaList, kelompokList }: Pro
             </div>
           </div>
 
+          {isEditing && (
           <div className="space-y-4 border-t pt-4">
             <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full inline-block">Foto Profil</p>
             <div className="flex items-center gap-4">
-              <div className="relative h-20 w-20 rounded-2xl overflow-hidden border-2 border-gray-100 bg-gray-50 flex-shrink-0">
+              <div className="relative h-20 w-20 rounded-2xl overflow-hidden border-2 border-gray-100 bg-gray-50 flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => fileRef.current?.click()}>
                 {fotoPreview ? (
                   <Image src={fotoPreview} fill className="object-cover" alt="Foto" unoptimized />
                 ) : (
@@ -208,7 +232,7 @@ export function ProfileView({ profile, daerahList, desaList, kelompokList }: Pro
                 )}
                 {uploading && (
                   <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
-                    <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
+                    <CircularProgress progress={uploadProgress} />
                   </div>
                 )}
               </div>
@@ -217,19 +241,19 @@ export function ProfileView({ profile, daerahList, desaList, kelompokList }: Pro
                 <label className="inline-flex items-center gap-2 cursor-pointer rounded-xl bg-gray-50 border border-gray-100 px-4 py-2 text-sm font-bold text-gray-600 hover:bg-gray-100 transition-colors">
                   <Upload className="h-4 w-4" /> Ganti Foto
                   <input
-                    ref={fileRef}
                     type="file"
                     accept="image/*"
                     className="hidden"
                     onChange={e => {
                       const f = e.target.files?.[0];
-                      if (f) handlePhotoUpload(f);
+                      if (f) uploadWithProgress(f);
                     }}
                   />
                 </label>
               </div>
             </div>
           </div>
+          )}
 
           <div className="space-y-4 border-t pt-4">
             <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full inline-block">Kontak</p>
@@ -250,15 +274,21 @@ export function ProfileView({ profile, daerahList, desaList, kelompokList }: Pro
   }
 
   return (
+    <>
     <div className="space-y-6 pb-20">
       <div className="bg-white rounded-[2.5rem] border border-gray-100 p-8 shadow-xl shadow-gray-100/50 space-y-8 relative overflow-hidden">
         <div className="space-y-3 text-center">
           {/* Foto Profil */}
-          <div className="relative mx-auto h-24 w-24 rounded-full overflow-hidden border-4 border-emerald-50 shadow-lg bg-gray-50">
+          <div className="relative mx-auto h-24 w-24 rounded-full overflow-hidden border-4 border-emerald-50 shadow-lg bg-gray-50 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => fileRef.current?.click()}>
             {fotoPreview ? (
               <Image src={fotoPreview} fill className="object-cover" alt="Foto Profil" unoptimized />
             ) : (
               <div className="flex items-center justify-center h-full"><Camera className="h-8 w-8 text-gray-300" /></div>
+            )}
+            {uploading && (
+              <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-full">
+                <CircularProgress progress={uploadProgress} />
+              </div>
             )}
           </div>
           <h2 className="text-3xl font-black text-gray-900">{profile.namaLengkap}</h2>
@@ -358,6 +388,24 @@ export function ProfileView({ profile, daerahList, desaList, kelompokList }: Pro
            </div>
         </div>
       </div>
+    </div>
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) { uploadWithProgress(f); } e.target.value = ""; }} />
+    </>
+  );
+}
+
+function CircularProgress({ progress }: { progress: number }) {
+  const r = 18;
+  const circumference = 2 * Math.PI * r;
+  const offset = circumference - (progress / 100) * circumference;
+  return (
+    <div className="flex flex-col items-center gap-0.5">
+      <svg width="44" height="44" viewBox="0 0 44 44" className="-rotate-90">
+        <circle cx="22" cy="22" r={r} fill="none" stroke="#e5e7eb" strokeWidth="4" />
+        <circle cx="22" cy="22" r={r} fill="none" stroke="#059669" strokeWidth="4" strokeLinecap="round"
+          strokeDasharray={circumference} strokeDashoffset={offset} className="transition-all duration-200" />
+      </svg>
+      <span className="text-[10px] font-bold text-emerald-600">{progress}%</span>
     </div>
   );
 }

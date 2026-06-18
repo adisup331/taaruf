@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useMemo, useRef } from "react"
 import { Pencil, Camera, Upload, Loader2, ImageIcon } from "lucide-react"
@@ -18,6 +18,7 @@ import { ActionForm } from "@/components/admin-panel/action-form"
 import { SubmitButton } from "@/components/admin-panel/submit-button"
 import { WilayahSearch } from "@/components/admin-panel/wilayah-search"
 import { adminUpdateMember } from "./actions"
+import { ResetPasswordButton } from "@/components/admin-panel/reset-password-button"
 
 interface WilayahItem { nama: string }
 interface DesaItem extends WilayahItem { daerahId?: string }
@@ -40,7 +41,7 @@ const Field = ({ label, children }: { label: string; children: React.ReactNode }
   <div className="space-y-1"><Label>{label}</Label>{children}</div>
 )
 
-// ── Cascading group menggunakan client-side filter ──
+// â”€â”€ Cascading group menggunakan client-side filter â”€â”€
 function CascadingGroup({
   prefix, initDaerah, initDesa, initKelompok,
   daerahList, desaList, kelompokList,
@@ -56,7 +57,7 @@ function CascadingGroup({
   }
   const [dKey, dsKey, kKey] = fieldKeys[prefix] || [prefix + "Daerah", prefix + "Desa", prefix + "Kelompok"]
 
-  // Map nama → id dari indexed data
+  // Map nama â†’ id dari indexed data
   const daerahMap = useMemo(() => {
     const map = new Map<string, string>()
     daerahList.forEach(d => (d as any).id && map.set(d.nama, (d as any).id))
@@ -64,7 +65,7 @@ function CascadingGroup({
   }, [daerahList])
 
   const desaParentMap = useMemo(() => {
-    // Map nama desa → nama daerah parent (untuk filter client-side)
+    // Map nama desa â†’ nama daerah parent (untuk filter client-side)
     const map = new Map<string, string>()
     desaList.forEach(d => {
       const daerahId = (d as any).daerahId
@@ -119,7 +120,7 @@ function CascadingGroup({
   )
 }
 
-// ── Photo Upload with Preview ──
+// â”€â”€ Photo Upload with Preview â”€â”€
 function PhotoUpload({ profileId, type, label, currentUrl }: { profileId: string; type: string; label: string; currentUrl?: string | null }) {
   const [uploading, setUploading] = useState(false)
   const [preview, setPreview] = useState(photoUrl(currentUrl))
@@ -183,7 +184,7 @@ function PhotoUpload({ profileId, type, label, currentUrl }: { profileId: string
         <div className="flex-1 min-w-0">
           <p className="text-xs font-bold truncate">{label}</p>
           <p className="text-[10px] text-muted-foreground">
-            {localPreview ? "Preview — klik Simpan atau Batal" : (preview ? "Foto tersimpan" : "Belum ada foto")}
+            {localPreview ? "Preview â€” klik Simpan atau Batal" : (preview ? "Foto tersimpan" : "Belum ada foto")}
           </p>
         </div>
         {!localPreview && (
@@ -259,7 +260,7 @@ export function EditMemberDialog({ profile, daerahList, desaList, kelompokList }
           <div className="border-t pt-4 space-y-3">
             <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Latar Belakang</p>
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Mubaligh"><Sel name="statusMubaligh" defaultValue={profile.statusMubaligh}><option value="">—</option><option value="Non Mubaligh">Non Mubaligh</option><option value="Mubaligh">Mubaligh</option></Sel></Field>
+              <Field label="Mubaligh"><Sel name="statusMubaligh" defaultValue={profile.statusMubaligh}><option value="">â€”</option><option value="Non Mubaligh">Non Mubaligh</option><option value="Mubaligh">Mubaligh</option></Sel></Field>
               <Field label="Pendidikan"><Input name="pendidikanTerakhir" defaultValue={profile.pendidikanTerakhir} /></Field>
               <Field label="Pekerjaan"><Input name="pekerjaan" defaultValue={profile.pekerjaan} /></Field>
               <div className="grid grid-cols-2 gap-2">
@@ -274,13 +275,13 @@ export function EditMemberDialog({ profile, daerahList, desaList, kelompokList }
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Ibu</Label>
-                <Sel name="kondisiIbu" defaultValue={profile.kondisiIbu}><option value="">—</option><option value="Masih Hidup">Masih Hidup</option><option value="Almarhum">Almarhum</option></Sel>
-                <Sel name="statusJamaahIbu" defaultValue={profile.statusJamaahIbu}><option value="">— Status —</option><option value="Sudah Jamaah">Sudah Jamaah</option><option value="Belum Jamaah">Belum Jamaah</option></Sel>
+                <Sel name="kondisiIbu" defaultValue={profile.kondisiIbu}><option value="">â€”</option><option value="Masih Hidup">Masih Hidup</option><option value="Almarhum">Almarhum</option></Sel>
+                <Sel name="statusJamaahIbu" defaultValue={profile.statusJamaahIbu}><option value="">â€” Status â€”</option><option value="Sudah Jamaah">Sudah Jamaah</option><option value="Belum Jamaah">Belum Jamaah</option></Sel>
               </div>
               <div className="space-y-2">
                 <Label>Bapak</Label>
-                <Sel name="kondisiAyah" defaultValue={profile.kondisiAyah}><option value="">—</option><option value="Masih Hidup">Masih Hidup</option><option value="Almarhum">Almarhum</option></Sel>
-                <Sel name="statusJamaahAyah" defaultValue={profile.statusJamaahAyah}><option value="">— Status —</option><option value="Sudah Jamaah">Sudah Jamaah</option><option value="Belum Jamaah">Belum Jamaah</option></Sel>
+                <Sel name="kondisiAyah" defaultValue={profile.kondisiAyah}><option value="">â€”</option><option value="Masih Hidup">Masih Hidup</option><option value="Almarhum">Almarhum</option></Sel>
+                <Sel name="statusJamaahAyah" defaultValue={profile.statusJamaahAyah}><option value="">â€” Status â€”</option><option value="Sudah Jamaah">Sudah Jamaah</option><option value="Belum Jamaah">Belum Jamaah</option></Sel>
               </div>
             </div>
           </div>
@@ -290,11 +291,15 @@ export function EditMemberDialog({ profile, daerahList, desaList, kelompokList }
             <Field label="Instagram"><Input name="instagram" defaultValue={profile.instagram} /></Field>
           </div>
 
-          {/* ── Upload Foto ── */}
+          {/* â”€â”€ Upload Foto â”€â”€ */}
           <div className="border-t pt-4 space-y-4">
             <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Upload Foto</p>
             <PhotoUpload profileId={profile.id} type="fotoProfil" label="Foto Profil" currentUrl={profile.fotoProfil} />
             <PhotoUpload profileId={profile.id} type="fotoEvent" label="Foto Event (Studio)" currentUrl={profile.fotoEvent} />
+          </div>
+
+          <div className="border-t pt-4">
+            <ResetPasswordButton userId={profile.userId} namaLengkap={profile.namaLengkap} />
           </div>
 
           <div className="pt-2">
@@ -305,3 +310,4 @@ export function EditMemberDialog({ profile, daerahList, desaList, kelompokList }
     </Dialog>
   )
 }
+

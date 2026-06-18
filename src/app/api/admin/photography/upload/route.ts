@@ -3,6 +3,13 @@ import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 
+// Helper: extract storage path from publicUrl
+function extractStoragePath(url: string | null): string | null {
+  if (!url) return null;
+  const match = url.match(/\/pnkb\/(.+?)(\?|$)/);
+  return match ? match[1] : null;
+}
+
 export async function POST(request: Request) {
   try {
     const supabase = createClient()
@@ -21,12 +28,14 @@ export async function POST(request: Request) {
 
     const adminClient = createAdminClient()
 
-    // Ambil nama lengkap untuk penamaan file
+    // Get current fotoEvent URL + nama for file naming
     const { data: profile } = await adminClient
       .from("Profile")
-      .select("namaLengkap")
+      .select("namaLengkap, fotoEvent")
       .eq("id", profileId)
       .single()
+
+    const oldPhotoPath = extractStoragePath(profile?.fotoEvent)
 
     const safeName = profile?.namaLengkap
       ? profile.namaLengkap.toLowerCase().replace(/[^a-z0-9]/g, "-")
@@ -34,7 +43,7 @@ export async function POST(request: Request) {
 
     const path = `profiles/${safeName}.jpg`
 
-    // Upload (timpa file lama) via admin client (bypass RLS)
+    // Upload new (timpa file lama jika nama sama)
     const { error: uploadError } = await adminClient.storage
       .from("pnkb")
       .upload(path, file, { upsert: true, contentType: file.type })
@@ -46,15 +55,17 @@ export async function POST(request: Request) {
       )
     }
 
-    const { data: pub } = adminClient.storage.from("pnkb").getPublicUrl(path)
+    // Delete old photo if path different from new (cleanup storage)
+    if (oldPhotoPath && oldPhotoPath !== path) {
+      await adminClient.storage.from("pnkb").remove([oldPhotoPath])
+    }
 
-    // PENTING: tambahkan cache-buster agar URL berubah tiap upload,
-    // sehingga React re-render & browser ambil foto terbaru.
+    const { data: pub } = adminClient.storage.from("pnkb").getPublicUrl(path)
     const versionedUrl = `${pub.publicUrl}?v=${Date.now()}`
 
     const { data: updated, error: updateError } = await adminClient
       .from("Profile")
-      .update({ fotoEvent: versionedUrl }) // Update kolom fotoEvent khusus studio
+      .update({ fotoEvent: versionedUrl })
       .eq("id", profileId)
       .select("id")
 
@@ -72,7 +83,6 @@ export async function POST(request: Request) {
       )
     }
 
-    // Revalidate semua halaman admin yang menampilkan foto
     revalidatePath("/admin", "layout")
     revalidatePath("/dashboard", "layout")
 

@@ -3,12 +3,11 @@ import { revalidatePath } from "next/cache";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Search } from "lucide-react";
 import { genderLabel, photoUrl } from "@/lib/utils";
 import { type ActionResult } from "@/lib/action-result";
 import { EditMemberDialog } from "./edit-dialog";
+import { MemberDetailDialog } from "@/components/admin-panel/member-detail-dialog";
 import { AddToEventButton } from "./add-to-event";
 import { DeleteConfirmButton } from "@/components/admin-panel/delete-confirm-button";
 import { RegisterMemberForm } from "./register-form";
@@ -184,27 +183,7 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
                   <tr key={p.id} className="border-b transition-colors hover:bg-muted/50">
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-3">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Avatar className="h-9 w-9 cursor-pointer hover:ring-2 hover:ring-emerald-300 transition-all">
-                              {photoUrl(p.fotoProfil) ? (
-                                <AvatarImage src={photoUrl(p.fotoProfil)!} alt={p.namaLengkap} className="object-cover" />
-                              ) : (
-                                <AvatarFallback className="text-xs bg-muted cursor-pointer">
-                                  {p.namaLengkap?.slice(0, 2).toUpperCase()}
-                                </AvatarFallback>
-                              )}
-                            </Avatar>
-                          </DialogTrigger>
-                          {photoUrl(p.fotoProfil) && (
-                            <DialogContent className="max-w-lg p-2 bg-black border-none rounded-2xl">
-                              <div className="relative w-full aspect-[3/4] rounded-xl overflow-hidden">
-                                <img src={photoUrl(p.fotoProfil)!} alt={p.namaLengkap} className="w-full h-full object-contain" />
-                              </div>
-                              <p className="text-center text-white text-sm font-bold py-2">{p.namaLengkap}</p>
-                            </DialogContent>
-                          )}
-                        </Dialog>
+                        <MemberDetailDialog profile={p} />
                         <span className="font-medium">{p.namaLengkap}</span>
                       </div>
                     </td>
@@ -252,3 +231,7 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
     </div>
   );
 }
+
+
+
+

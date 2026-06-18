@@ -3,6 +3,13 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 
+// Helper: extract storage path from publicUrl
+function extractStoragePath(url: string | null): string | null {
+  if (!url) return null;
+  const match = url.match(/\/pnkb\/(.+?)(\?|$)/);
+  return match ? match[1] : null;
+}
+
 export async function POST(request: Request) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -15,13 +22,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, message: "File tidak valid." }, { status: 400 });
   }
 
+  const adminClient = createAdminClient();
+
+  // Get current fotoProfil to delete later
+  const { data: profile } = await adminClient
+    .from("Profile")
+    .select("fotoProfil")
+    .eq("userId", user.id)
+    .single();
+
+  const oldPhotoPath = extractStoragePath(profile?.fotoProfil);
+
   // Nama file unik per user
   const fileExt = file.name.split(".").pop();
   const fileName = `member-${user.id}-${Date.now()}.${fileExt}`;
   const path = `profiles/${fileName}`;
 
-  // Use admin client for storage upload (bypass RLS)
-  const adminClient = createAdminClient();
+  // Upload new
   const { error: uploadError } = await adminClient.storage
     .from("pnkb")
     .upload(path, file, { upsert: true, contentType: file.type });
@@ -30,10 +47,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, message: `Upload gagal: ${uploadError.message}` }, { status: 500 });
   }
 
+  // Delete old photo if exists (cleanup storage)
+  if (oldPhotoPath) {
+    await adminClient.storage.from("pnkb").remove([oldPhotoPath]);
+  }
+
   const { data: pub } = adminClient.storage.from("pnkb").getPublicUrl(path);
   const versionedUrl = `${pub.publicUrl}?v=${Date.now()}`;
 
-  // Update HANYA fotoProfil, bukan fotoEvent
+  // Update HANYA fotoProfil
   const { error: dbError } = await adminClient
     .from("Profile")
     .update({ fotoProfil: versionedUrl })

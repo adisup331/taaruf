@@ -1,6 +1,7 @@
-"use server";
+﻿"use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { type ActionResult } from "@/lib/action-result";
 
@@ -43,11 +44,26 @@ export async function updateProfile(_prev: ActionResult, formData: FormData): Pr
 
   let fotoProfilUrl = undefined;
   if (fotoProfilFile && fotoProfilFile.size > 0) {
+    const adminClient = createAdminClient();
     const fileExt = fotoProfilFile.name.split('.').pop();
     const fileName = `member-${user.id}-${Date.now()}.${fileExt}`;
     const path = `profiles/${fileName}`;
 
-    const { error: uploadError } = await supabase.storage
+    // Get current foto to delete old file
+    const { data: currentProfile } = await adminClient
+      .from("Profile")
+      .select("fotoProfil")
+      .eq("userId", user.id)
+      .single();
+
+    const oldPath = (() => {
+      const url = currentProfile?.fotoProfil;
+      if (!url) return null;
+      const match = url.match(/\/pnkb\/(.+?)(\?|$)/);
+      return match ? match[1] : null;
+    })();
+
+    const { error: uploadError } = await adminClient.storage
       .from("pnkb")
       .upload(path, fotoProfilFile, { upsert: true, contentType: fotoProfilFile.type });
 
@@ -55,7 +71,12 @@ export async function updateProfile(_prev: ActionResult, formData: FormData): Pr
       return { ok: false, message: `Gagal upload foto: ${uploadError.message}` };
     }
 
-    const { data: pub } = supabase.storage.from("pnkb").getPublicUrl(path);
+    // Delete old photo after successful upload
+    if (oldPath) {
+      await adminClient.storage.from("pnkb").remove([oldPath]);
+    }
+
+    const { data: pub } = adminClient.storage.from("pnkb").getPublicUrl(path);
     fotoProfilUrl = `${pub.publicUrl}?v=${Date.now()}`;
   }
 
@@ -95,3 +116,4 @@ export async function updateProfile(_prev: ActionResult, formData: FormData): Pr
   revalidatePath("/profil");
   return { ok: true, message: "Profil berhasil diperbarui!" };
 }
+

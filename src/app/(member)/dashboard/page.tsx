@@ -93,7 +93,7 @@ export default async function MemberDashboard() {
     const [{ data: oppositeProfiles }, { data: allRequests }] = await Promise.all([
       supabase
         .from('Profile')
-        .select('id, userId, namaLengkap, tanggalLahir, asalDaerah, asalKelompok, asalDesa, fotoProfil, fotoEvent')
+        .select('id, userId, namaLengkap, tanggalLahir, asalDaerah, asalKelompok, asalDesa, fotoProfil, fotoEvent, statusMubaligh, pendidikanTerakhir, statusPernikahan, pekerjaan, anakKe, jumlahSaudara, dapukanKelompok, dapukanDesa, dapukanDaerah, daerahSambung, desaSambung, kelompokSambung, kondisiIbu, kondisiAyah, statusJamaahIbu, statusJamaahAyah')
         .eq('jenisKelamin', oppositeGender)
         .in('userId', attendeeUserIds),
       supabase
