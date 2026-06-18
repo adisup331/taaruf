@@ -407,46 +407,45 @@ export function RegisterMemberForm({
             </div>
           </div>
 
-          {/* ── Daerah Sambung (baru) ── */}
+          {/* ── Daerah Sambung ── */}
           <div>
             <p className='text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2'>Daerah Sambung</p>
             <div className='grid gap-3 sm:grid-cols-3'>
-              <div className='space-y-1'>
-                <label className='text-xs text-muted-foreground'>Daerah Sambung</label>
-                <input type='hidden' name='daerahSambung' value={sambungDaerahNama} />
-                <select
-                  value={sambungDaerahId}
-                  onChange={e => { const o = daerahList.find(d => d.id === e.target.value); setSambungDaerahId(e.target.value); setSambungDaerahNama(o?.nama || ''); }}
-                  className='h-10 w-full rounded-md border bg-background px-3 text-sm'
-                >
-                  <option value=''>— Pilih —</option>
-                  {daerahList.map(d => <option key={d.id} value={d.id}>{d.nama}</option>)}
-                </select>
-              </div>
-              <div className='space-y-1'>
-                <label className='text-xs text-muted-foreground'>Desa Sambung</label>
-                <input type='hidden' name='desaSambung' value={sambungDesaNama} />
-                <select
-                  value={sambungDesaId}
-                  onChange={e => { const o = sambungFilteredDesa.find(d => d.id === e.target.value); setSambungDesaId(e.target.value); setSambungDesaNama(o?.nama || ''); }}
-                  className='h-10 w-full rounded-md border bg-background px-3 text-sm'
-                >
-                  <option value=''>— Pilih —</option>
-                  {sambungFilteredDesa.map(d => <option key={d.id} value={d.id}>{d.nama}</option>)}
-                </select>
-              </div>
-              <div className='space-y-1'>
-                <label className='text-xs text-muted-foreground'>Kelompok Sambung</label>
-                <input type='hidden' name='kelompokSambung' value={sambungKelompokNama} />
-                <select
-                  value={sambungKelompokId}
-                  onChange={e => { const o = sambungFilteredKelompok.find(d => d.id === e.target.value); setSambungKelompokId(e.target.value); setSambungKelompokNama(o?.nama || ''); }}
-                  className='h-10 w-full rounded-md border bg-background px-3 text-sm'
-                >
-                  <option value=''>— Pilih —</option>
-                  {sambungFilteredKelompok.map(d => <option key={d.id} value={d.id}>{d.nama}</option>)}
-                </select>
-              </div>
+              <SearchableSelect
+                fieldName='daerahSambung'
+                label='Daerah Sambung'
+                options={daerahList}
+                valueId={sambungDaerahId}
+                valueName={sambungDaerahNama}
+                onSelect={(id, nama) => {
+                  setSambungDaerahId(id);
+                  setSambungDaerahNama(nama);
+                }}
+                placeholder='Cari daerah...'
+                table='Daerah'
+              />
+              <SearchableSelect
+                fieldName='desaSambung'
+                label='Desa Sambung'
+                options={sambungFilteredDesa}
+                valueId={sambungDesaId}
+                valueName={sambungDesaNama}
+                onSelect={(id, nama) => { setSambungDesaId(id); setSambungDesaNama(nama); }}
+                placeholder={sambungDaerahId ? 'Cari desa...' : 'Pilih daerah dulu'}
+                table='Desa'
+                parentId={sambungDaerahId}
+              />
+              <SearchableSelect
+                fieldName='kelompokSambung'
+                label='Kelompok Sambung'
+                options={sambungFilteredKelompok}
+                valueId={sambungKelompokId}
+                valueName={sambungKelompokNama}
+                onSelect={(id, nama) => { setSambungKelompokId(id); setSambungKelompokNama(nama); }}
+                placeholder={sambungDesaId ? 'Cari kelompok...' : 'Pilih desa dulu'}
+                table='Kelompok'
+                parentId={sambungDesaId}
+              />
             </div>
           </div>
 
