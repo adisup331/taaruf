@@ -12,9 +12,10 @@ import { AddToEventButton } from "./add-to-event";
 import { DeleteConfirmButton } from "@/components/admin-panel/delete-confirm-button";
 import { RegisterMemberForm } from "./register-form";
 import { GenderFilter } from "./gender-filter";
+import { DaerahFilter } from "./daerah-filter";
 
 interface MembersPageProps {
-  searchParams: { q?: string; jenisKelamin?: string };
+  searchParams: { q?: string; jenisKelamin?: string; asalDaerah?: string };
 }
 
 function calculateAge(dob: string | null) {
@@ -27,6 +28,7 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
   const supabase = createClient();
   const q = searchParams.q || "";
   const jenisKelamin = searchParams.jenisKelamin || "";
+  const asalDaerah = searchParams.asalDaerah || "";
 
   let query = supabase.from("Profile")
     .select("id, userId, namaLengkap, jenisKelamin, tanggalLahir, asalDaerah, asalKelompok, asalDesa, nomorHp, instagram, fotoProfil, fotoEvent, statusMubaligh, pendidikanTerakhir, statusPernikahan, pekerjaan, anakKe, jumlahSaudara, dapukanKelompok, dapukanDesa, dapukanDaerah, kondisiIbu, kondisiAyah, statusJamaahIbu, statusJamaahAyah, daerahSambung, desaSambung, kelompokSambung")
@@ -37,6 +39,7 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
     );
   }
   if (jenisKelamin) query = query.eq("jenisKelamin", jenisKelamin);
+  if (asalDaerah) query = query.eq("asalDaerah", asalDaerah);
 
   const [{ data: profiles }, { data: daerahList }, { data: desaList }, { data: kelompokList }, { data: activeEvents }] =
     await Promise.all([
@@ -158,9 +161,12 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
           <CardTitle className="text-base">{profiles?.length || 0} Member</CardTitle>
           <div className="flex items-center gap-2">
             <form className="relative">
+              <input type="hidden" name="jenisKelamin" value={jenisKelamin} />
+              <input type="hidden" name="asalDaerah" value={asalDaerah} />
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input name="q" placeholder="Cari nama..." defaultValue={q} className="pl-9 h-9 w-48" />
             </form>
+            <DaerahFilter daerahList={daerahList || []} />
             <GenderFilter />
           </div>
         </CardHeader>

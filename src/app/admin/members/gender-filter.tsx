@@ -7,10 +7,12 @@ export function GenderFilter() {
   const params = useSearchParams();
   const jenisKelamin = params.get('jenisKelamin') || '';
   const q = params.get('q') || '';
+  const asalDaerah = params.get('asalDaerah') || '';
 
   const handleChange = (val: string) => {
     const query = new URLSearchParams();
     if (q) query.set('q', q);
+    if (asalDaerah) query.set('asalDaerah', asalDaerah);
     if (val) query.set('jenisKelamin', val);
     router.push(`?${query.toString()}`);
   };
