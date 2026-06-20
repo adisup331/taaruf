@@ -1,8 +1,8 @@
-"use client"
+﻿"use client"
 
 import * as React from "react"
 import Image from "next/image"
-import { Camera, Upload, RefreshCw } from "lucide-react"
+import { Camera, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { LiveCamera } from "@/components/admin-panel/live-camera"
@@ -26,10 +26,18 @@ export function PhotographyClient({
   const router = useRouter()
   const [showCamera, setShowCamera] = React.useState(false)
   const [isUploading, setIsUploading] = React.useState(false)
+  const [localFotoEvent, setLocalFotoEvent] = React.useState<string | null>(null)
 
-  // Supabase bisa mengembalikan relasi sebagai array atau objek — tangani keduanya
   const userData = Array.isArray(attendee?.User) ? attendee.User[0] : attendee?.User
   const profile = Array.isArray(userData?.Profile) ? userData.Profile[0] : userData?.Profile
+
+  // Sync localFotoEvent when attendee/profile changes (e.g. new search)
+  React.useEffect(() => {
+    setLocalFotoEvent(null)
+  }, [attendee])
+
+  // Resolved foto event: prefer local updated URL, fallback to server prop
+  const resolvedFotoEvent = localFotoEvent ?? profile?.fotoEvent
 
   const handleCapture = async (blob: Blob) => {
     setIsUploading(true)
@@ -48,6 +56,11 @@ export function PhotographyClient({
 
       if (!res.ok || !data.ok) {
         throw new Error(data.message || "Upload gagal")
+      }
+
+      // Update foto langsung di client state
+      if (data.url) {
+        setLocalFotoEvent(data.url)
       }
 
       toast.success("Foto berhasil diperbarui!")
@@ -160,8 +173,8 @@ export function PhotographyClient({
                 <div className="space-y-2">
                   <p className="text-[10px] font-bold uppercase text-emerald-600">Foto Studio Event</p>
                   <div className="relative h-48 w-full overflow-hidden rounded-xl border-2 border-emerald-100 shadow-md bg-emerald-50/30">
-                    {photoUrl(profile.fotoEvent) ? (
-                      <Image src={photoUrl(profile.fotoEvent)!} fill unoptimized className="object-cover" alt="Current Event" />
+                    {photoUrl(resolvedFotoEvent) ? (
+                      <Image src={photoUrl(resolvedFotoEvent)!} fill unoptimized className="object-cover" alt="Current Event" />
                     ) : (
                       <div className="absolute inset-0 flex flex-col items-center justify-center text-emerald-600/30">
                         <Camera className="h-8 w-8 mb-1" />
