@@ -347,8 +347,15 @@ export function RegisterMemberForm({
         </div>
         <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border bg-white px-4 py-2 text-xs font-bold hover:bg-gray-50">
           <Upload className="h-3.5 w-3.5" /> {photoFileRef.current ? "Ganti" : "Pilih"}
-          <input type="file" accept="image/*" className="hidden" onChange={e => {
-            const f = e.target.files?.[0]; if (f) { photoFileRef.current = f; const r = new FileReader(); r.onload = ev => setPhotoPreview(ev.target?.result as string); r.readAsDataURL(f); } e.target.value = "";
+          <input type="file" accept="image/*,.heic,.heif" className="hidden" onChange={async e => {
+            const f = e.target.files?.[0];
+            if (f) {
+              const mod = await import("@/lib/image-utils").catch(() => null);
+              const processed = mod ? await mod.ensureJpeg(f).catch(() => f) : f;
+              photoFileRef.current = processed;
+              const r = new FileReader(); r.onload = ev => setPhotoPreview(ev.target?.result as string); r.readAsDataURL(processed);
+            }
+            e.target.value = "";
           }} />
         </label>
         {photoFileRef.current && !uploading && (

@@ -29,11 +29,17 @@ export function ProfileView({ profile, daerahList, desaList, kelompokList }: Pro
   const fileRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  function uploadWithProgress(file: File) {
+  async function uploadWithProgress(file: File) {
     setUploading(true);
     setUploadProgress(0);
+
+    // Konversi HEIC → JPEG jika perlu
+    const { ensureJpeg } = await import("@/lib/image-utils");
+    let processedFile = file;
+    try { processedFile = await ensureJpeg(file); } catch {}
+
     const fd = new FormData();
-    fd.append("photo", file);
+    fd.append("photo", processedFile);
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "/api/profile/upload-photo");
     xhr.upload.onprogress = (e) => {

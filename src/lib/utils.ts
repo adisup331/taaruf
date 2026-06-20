@@ -49,5 +49,8 @@ export function photoUrl(fotoProfil?: string | null): string | null {
   const cleanPath = path.split("?")[0]
   const version = fotoProfil.includes("?v=") ? fotoProfil.split("?v=")[1] : ""
 
-  return `/api/photo?path=${encodeURIComponent(cleanPath)}${version ? `&v=${version}` : ""}`
+  // HEIC/HEIF → JPEG agar bisa dirender browser
+  const webPath = cleanPath.replace(/\.(heic|heif)$/i, ".jpg")
+
+  return `/api/photo?path=${encodeURIComponent(webPath)}${version ? `&v=${version}` : ""}`
 }

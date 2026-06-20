@@ -133,8 +133,11 @@ function PhotoUpload({ profileId, type, label, currentUrl }: { profileId: string
     if (!selectedFile) return
     setUploading(true)
     try {
+      // Konversi HEIC → JPEG
+      const { ensureJpeg } = await import("@/lib/image-utils")
+      const processed = await ensureJpeg(selectedFile).catch(() => selectedFile)
       const fd = new FormData()
-      fd.append("photo", selectedFile)
+      fd.append("photo", processed)
       fd.append("profileId", profileId)
       fd.append("type", type)
       const res = await fetch("/api/admin/members/upload-photo", { method: "POST", body: fd })
@@ -152,11 +155,13 @@ function PhotoUpload({ profileId, type, label, currentUrl }: { profileId: string
     }
   }
 
-  function handleSelect(file: File) {
-    setSelectedFile(file)
+  async function handleSelect(file: File) {
+    const mod = await import("@/lib/image-utils").catch(() => null);
+    const processed = mod ? await mod.ensureJpeg(file).catch(() => file) : file;
+    setSelectedFile(processed)
     const reader = new FileReader()
     reader.onload = (ev) => setLocalPreview(ev.target?.result as string)
-    reader.readAsDataURL(file)
+    reader.readAsDataURL(processed)
   }
 
   function cancel() {
