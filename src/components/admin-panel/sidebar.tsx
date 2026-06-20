@@ -99,7 +99,7 @@ export function Sidebar() {
       {/* Desktop */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-sidebar-border bg-sidebar transition-[width] duration-300 md:flex",
+          "fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-sidebar-border bg-sidebar transition-[width] duration-300 md:flex sidebar-wrapper",
           collapsed ? "w-16" : "w-64"
         )}
       >

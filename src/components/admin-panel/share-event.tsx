@@ -2,12 +2,13 @@
 
 import { useState } from "react"
 import { QRCodeSVG } from "qrcode.react"
-import { Copy, Check, Download } from "lucide-react"
+import { Copy, Check, Download, Printer } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 const PROD_URL = "https://taarufyuk.vercel.app"
 
-export function ShareEvent({ url, slug }: { url: string; slug: string }) {
+export function ShareEvent({ url, slug, eventId }: { url: string; slug: string; eventId: string }) {
   const [copied, setCopied] = useState(false)
   const liveUrl = `${PROD_URL}/e/${slug}`
 
@@ -72,6 +73,12 @@ export function ShareEvent({ url, slug }: { url: string; slug: string }) {
           </div>
         </div>
       )}
+
+      <Button type="button" variant="outline" size="sm" asChild className="w-full">
+        <Link href={`/admin/print/event/${eventId}`} target="_blank">
+          <Printer className="h-4 w-4 mr-2" /> Cetak PDF QR
+        </Link>
+      </Button>
 
       <Button type="button" variant="outline" size="sm" onClick={downloadQR} className="w-full">
         <Download className="h-4 w-4 mr-2" /> Download QR Code

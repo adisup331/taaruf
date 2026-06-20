@@ -76,3 +76,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+  .sidebar-wrapper { display: none !important; }
+  .topnav-wrapper { display: none !important; }
+}

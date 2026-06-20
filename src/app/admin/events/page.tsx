@@ -25,12 +25,21 @@ export default async function AdminEventsPage() {
 
   // Attendee counts per event (separate query)
   const counts: Record<string, number> = {};
+  const genderCounts: Record<string, { ikhwan: number; akhwat: number }> = {};
   if (events && events.length > 0) {
     const { data: attendees } = await supabase
       .from("EventAttendee")
-      .select("eventId");
+      .select("eventId, User ( Profile ( jenisKelamin ) )");
+
     attendees?.forEach((a: any) => {
-      counts[a.eventId] = (counts[a.eventId] || 0) + 1;
+      const user = Array.isArray(a.User) ? a.User[0] : a.User;
+      const profile = Array.isArray(user?.Profile) ? user.Profile[0] : user?.Profile;
+      const gender = profile?.jenisKelamin;
+      const eid = a.eventId;
+      counts[eid] = (counts[eid] || 0) + 1;
+      if (!genderCounts[eid]) genderCounts[eid] = { ikhwan: 0, akhwat: 0 };
+      if (gender === "IKHWAN") genderCounts[eid].ikhwan++;
+      else if (gender === "AKHWAT") genderCounts[eid].akhwat++;
     });
   }
 
@@ -133,10 +142,16 @@ export default async function AdminEventsPage() {
                     <MapPin className="mr-2 h-4 w-4" />
                     {event.location}
                   </div>
-                  <div className="flex items-center gap-3 text-xs font-medium">
-                    <span>{counts[event.id] ?? 0} peserta</span>
+                  <div className="flex items-center gap-1.5 text-xs font-medium flex-wrap">
+                    <span className="text-muted-foreground">{counts[event.id] ?? 0} peserta</span>
+                    {genderCounts[event.id] && (
+                      <>
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 font-bold border-blue-200 text-blue-700 bg-blue-50">{genderCounts[event.id].ikhwan} Laki Laki</Badge>
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 font-bold border-pink-200 text-pink-700 bg-pink-50">{genderCounts[event.id].akhwat} Perempuan</Badge>
+                      </>
+                    )}
                     <span className="text-muted-foreground">•</span>
-                    <span>{event.totalTables ?? 0} meja</span>
+                    <span className="text-muted-foreground">{event.totalTables ?? 0} meja</span>
                   </div>
                 </div>
 

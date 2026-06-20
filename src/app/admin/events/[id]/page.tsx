@@ -56,7 +56,20 @@ export default async function EventDetailPage({ params }: { params: { id: string
     }
   }) || [];
 
+  // Urutkan peserta berdasarkan nomor peserta (ascending)
+  attendees.sort((a: any, b: any) => {
+    const numA = parseInt(a.participantNumber, 10);
+    const numB = parseInt(b.participantNumber, 10);
+    if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+    if (!isNaN(numA)) return -1;
+    if (!isNaN(numB)) return 1;
+    return String(a.participantNumber || "").localeCompare(String(b.participantNumber || ""));
+  });
+
   const checkedInCount = attendees.filter((a: any) => a.isCheckedIn).length;
+
+  const ikhwanCount = attendees.filter((a: any) => a.profile?.jenisKelamin === "IKHWAN").length;
+  const akhwatCount = attendees.filter((a: any) => a.profile?.jenisKelamin === "AKHWAT").length;
 
   const attendeeUserIds = attendees.map((a: any) => a.userId);
 
@@ -243,7 +256,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
             <CardTitle className="text-base">Link & QR Acara</CardTitle>
           </CardHeader>
           <CardContent>
-            <ShareEvent url={joinUrl} slug={event.slug} />
+            <ShareEvent url={joinUrl} slug={event.slug} eventId={params.id} />
           </CardContent>
         </Card>
       </div>
@@ -251,7 +264,11 @@ export default async function EventDetailPage({ params }: { params: { id: string
       {/* Attendee management */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Peserta Acara ({attendees?.length ?? 0})</CardTitle>
+          <CardTitle className="text-base flex items-center gap-2 flex-wrap">
+            Peserta Acara ({attendees?.length ?? 0})
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 font-bold border-blue-200 text-blue-700 bg-blue-50">{ikhwanCount} Laki-Laki</Badge>
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 font-bold border-pink-200 text-pink-700 bg-pink-50">{akhwatCount} Perempuan</Badge>
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Tambah member (checkbox multiple) */}

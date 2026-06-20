@@ -47,7 +47,7 @@ export function TopNav({ email, role }: TopNavProps) {
   const { toggleCollapsed, setMobileOpen } = useSidebar()
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-6">
+    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-6 topnav-wrapper">
       {/* Desktop collapse toggle */}
       <Button
         variant="ghost"
