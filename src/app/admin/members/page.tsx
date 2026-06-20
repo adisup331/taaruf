@@ -1,27 +1,16 @@
 ﻿import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import { genderLabel, photoUrl } from "@/lib/utils";
 import { type ActionResult } from "@/lib/action-result";
-import { EditMemberDialog } from "./edit-dialog";
-import { MemberDetailDialog } from "@/components/admin-panel/member-detail-dialog";
-import { AddToEventButton } from "./add-to-event";
-import { DeleteConfirmButton } from "@/components/admin-panel/delete-confirm-button";
 import { RegisterMemberForm } from "./register-form";
 import { GenderFilter } from "./gender-filter";
 import { DaerahFilter } from "./daerah-filter";
+import { MemberListView } from "./member-list-view";
 
 interface MembersPageProps {
   searchParams: { q?: string; jenisKelamin?: string; asalDaerah?: string };
-}
-
-function calculateAge(dob: string | null) {
-  if (!dob) return "-";
-  const diff = Date.now() - new Date(dob).getTime();
-  return Math.abs(new Date(diff).getUTCFullYear() - 1970);
 }
 
 export default async function AdminMembersPage({ searchParams }: MembersPageProps) {
@@ -171,67 +160,14 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left text-muted-foreground">
-                  <th className="px-6 py-3 font-medium">Member</th>
-                  <th className="px-6 py-3 font-medium">Jenis Kelamin</th>
-                  <th className="px-6 py-3 font-medium">Usia</th>
-                  <th className="px-6 py-3 font-medium">Asal Daerah</th>
-                  <th className="px-6 py-3 font-medium">Kelompok / Desa</th>
-                  <th className="px-6 py-3 font-medium">Daerah Sambung</th>
-                  <th className="px-6 py-3 font-medium text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {profiles?.map((p) => (
-                  <tr key={p.id} className="border-b transition-colors hover:bg-muted/50">
-                    <td className="px-6 py-3">
-                      <div className="flex items-center gap-3">
-                        <MemberDetailDialog profile={p} />
-                        <span className="font-medium">{p.namaLengkap}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-3">
-                      <Badge variant={p.jenisKelamin === "IKHWAN" ? "default" : "secondary"}>
-                        {genderLabel(p.jenisKelamin)}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-3">{calculateAge(p.tanggalLahir)} Tahun</td>
-                    <td className="px-6 py-3">{p.asalDaerah}</td>
-                    <td className="px-6 py-3 text-muted-foreground">{p.asalKelompok} / {p.asalDesa}</td>
-                    <td className="px-6 py-3 text-muted-foreground">
-                      {[p.daerahSambung, p.desaSambung, p.kelompokSambung].filter(Boolean).join(" / ") || <span className="text-xs italic">-</span>}
-                    </td>
-                    <td className="px-6 py-3 text-right">
-                       <div className="flex items-center justify-end gap-1">
-                         <AddToEventButton userId={p.userId} events={activeEvents || []} />
-                         <EditMemberDialog
-                           profile={p}
-                           daerahList={daerahList || []}
-                           desaList={desaList || []}
-                           kelompokList={kelompokList || []}
-                         />
-                         <DeleteConfirmButton
-                           title="Hapus Member?"
-                           description={`Hapus "${p.namaLengkap}" beserta semua data taaruf & kehadiran event-nya. Aksi ini tidak bisa dibatalkan.`}
-                           action={deleteMember.bind(null, p.userId)}
-                         />
-                       </div>
-                    </td>
-                  </tr>
-                ))}
-                {(!profiles || profiles.length === 0) && (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
-                      Belum ada member terdaftar.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <MemberListView
+            profiles={profiles || []}
+            daerahList={daerahList || []}
+            desaList={desaList || []}
+            kelompokList={kelompokList || []}
+            activeEvents={activeEvents || []}
+            deleteMember={deleteMember}
+          />
         </CardContent>
       </Card>
     </div>
