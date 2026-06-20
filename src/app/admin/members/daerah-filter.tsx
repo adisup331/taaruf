@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search, X } from "lucide-react";
+import { Search, X, Loader2 } from "lucide-react";
 
 export function DaerahFilter({ daerahList }: { daerahList: { nama: string }[] }) {
   const router = useRouter();
   const params = useSearchParams();
+  const [isPending, startTransition] = useTransition();
   const asalDaerah = params.get("asalDaerah") || "";
   const q = params.get("q") || "";
   const jenisKelamin = params.get("jenisKelamin") || "";
@@ -30,20 +31,24 @@ export function DaerahFilter({ daerahList }: { daerahList: { nama: string }[] })
   }, []);
 
   const handleSelect = (val: string) => {
-    const query = new URLSearchParams();
-    if (q) query.set("q", q);
-    if (jenisKelamin) query.set("jenisKelamin", jenisKelamin);
-    if (val) query.set("asalDaerah", val);
-    router.push(`?${query.toString()}`);
+    startTransition(() => {
+      const query = new URLSearchParams();
+      if (q) query.set("q", q);
+      if (jenisKelamin) query.set("jenisKelamin", jenisKelamin);
+      if (val) query.set("asalDaerah", val);
+      router.push(`?${query.toString()}`);
+    });
     setOpen(false);
     setSearch("");
   };
 
   const handleClear = () => {
-    const query = new URLSearchParams();
-    if (q) query.set("q", q);
-    if (jenisKelamin) query.set("jenisKelamin", jenisKelamin);
-    router.push(`?${query.toString()}`);
+    startTransition(() => {
+      const query = new URLSearchParams();
+      if (q) query.set("q", q);
+      if (jenisKelamin) query.set("jenisKelamin", jenisKelamin);
+      router.push(`?${query.toString()}`);
+    });
     setOpen(false);
     setSearch("");
   };
@@ -62,16 +67,20 @@ export function DaerahFilter({ daerahList }: { daerahList: { nama: string }[] })
         ) : (
           <span className="text-muted-foreground">Semua Daerah</span>
         )}
-        <svg
-          className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          <path d="m6 9 6 6 6-6" />
-        </svg>
+        {isPending ? (
+          <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />
+        ) : (
+          <svg
+            className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        )}
       </button>
 
       {open && (
