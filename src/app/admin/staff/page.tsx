@@ -102,8 +102,39 @@ export default async function AdminStaffPage({
         <CardHeader>
           <CardTitle className="text-base">{staff.length} Personel</CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
+        <CardContent className="p-4">
+          {/* Mobile */}
+          <div className="space-y-3 md:hidden">
+            {staff.map((s) => (
+              <div key={s.id} className="rounded-2xl border bg-white p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-12 w-12 border"><AvatarFallback className="text-xs font-bold bg-emerald-100 text-emerald-700">{s.name?.slice(0, 2).toUpperCase()}</AvatarFallback></Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold truncate">{s.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{s.email}</p>
+                  </div>
+                  {s.role === "ADMIN" ? (
+                    <Badge variant="default" className="bg-blue-600"><Shield className="mr-1 h-3 w-3" /> Admin</Badge>
+                  ) : (
+                    <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200"><Camera className="mr-1 h-3 w-3" /> Foto</Badge>
+                  )}
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">{genderLabel(s.profile?.jenisKelamin)} &middot; {s.profile?.nomorHp || "-"}</span>
+                  <div className="flex gap-1">
+                    <ActionForm action={updateStaffRole.bind(null, s.id, s.role === "ADMIN" ? "PHOTOGRAPHER" : "ADMIN")}>
+                      <SubmitButton size="sm" variant="outline" pendingText="..." className="text-xs h-8">{s.role === "ADMIN" ? "→ Foto" : "→ Admin"}</SubmitButton>
+                    </ActionForm>
+                    <DeleteConfirmButton title="Hapus?" description={`Hapus ${s.name}?`} action={deleteStaff.bind(null, s.id)} />
+                  </div>
+                </div>
+              </div>
+            ))}
+            {staff.length === 0 && <p className="py-8 text-center text-muted-foreground text-sm">{q ? `Tidak ada "${q}".` : "Belum ada staff."}</p>}
+          </div>
+
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
@@ -119,63 +150,30 @@ export default async function AdminStaffPage({
                   <tr key={s.id} className="border-b transition-colors hover:bg-muted/50">
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9 border">
-                          <AvatarFallback className="text-xs font-bold">
-                            {s.name?.slice(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col">
-                          <span className="font-bold">{s.name}</span>
-                          <span className="text-xs text-muted-foreground">{s.email}</span>
-                        </div>
+                        <Avatar className="h-9 w-9 border"><AvatarFallback className="text-xs font-bold">{s.name?.slice(0, 2).toUpperCase()}</AvatarFallback></Avatar>
+                        <div className="flex flex-col"><span className="font-bold">{s.name}</span><span className="text-xs text-muted-foreground">{s.email}</span></div>
                       </div>
                     </td>
                     <td className="px-6 py-3">
-                      <div className="flex items-center gap-2">
-                        {s.role === "ADMIN" ? (
-                          <Badge variant="default" className="bg-blue-600 hover:bg-blue-700">
-                            <Shield className="mr-1 h-3 w-3" /> Admin
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="bg-amber-100 text-amber-800 hover:bg-amber-200 border-amber-200">
-                            <Camera className="mr-1 h-3 w-3" /> Fotografer
-                          </Badge>
-                        )}
-                      </div>
+                      {s.role === "ADMIN" ? (
+                        <Badge variant="default" className="bg-blue-600"><Shield className="mr-1 h-3 w-3" /> Admin</Badge>
+                      ) : (
+                        <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200"><Camera className="mr-1 h-3 w-3" /> Fotografer</Badge>
+                      )}
                     </td>
-                    <td className="px-6 py-3">
-                      <span className="text-muted-foreground">
-                        {genderLabel(s.profile?.jenisKelamin)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3 text-muted-foreground font-mono">
-                      {s.profile?.nomorHp || "-"}
-                    </td>
+                    <td className="px-6 py-3"><span className="text-muted-foreground">{genderLabel(s.profile?.jenisKelamin)}</span></td>
+                    <td className="px-6 py-3 text-muted-foreground font-mono">{s.profile?.nomorHp || "-"}</td>
                     <td className="px-6 py-3 text-right">
                       <div className="flex justify-end gap-2">
-                        {/* Toggle Role Button */}
                         <ActionForm action={updateStaffRole.bind(null, s.id, s.role === "ADMIN" ? "PHOTOGRAPHER" : "ADMIN")}>
-                           <SubmitButton size="sm" variant="outline" pendingText="..." title="Ubah Role">
-                              Ubah ke {s.role === "ADMIN" ? "Fotografer" : "Admin"}
-                           </SubmitButton>
+                          <SubmitButton size="sm" variant="outline" pendingText="...">Ubah ke {s.role === "ADMIN" ? "Fotografer" : "Admin"}</SubmitButton>
                         </ActionForm>
-
-                        <DeleteConfirmButton
-                          title="Hapus Staff?"
-                          description={`Akun ${s.name} akan dihapus secara permanen dari sistem dan Auth.`}
-                          action={deleteStaff.bind(null, s.id)}
-                        />
+                        <DeleteConfirmButton title="Hapus Staff?" description={`Akun ${s.name} akan dihapus permanen.`} action={deleteStaff.bind(null, s.id)} />
                       </div>
                     </td>
                   </tr>
                 ))}
-                {staff.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">
-                      {q ? `Tidak ada staff dengan nama "${q}".` : "Belum ada staff terdaftar."}
-                    </td>
-                  </tr>
-                )}
+                {staff.length === 0 && <tr><td colSpan={5} className="px-6 py-12 text-center text-muted-foreground">{q ? `Tidak ada "${q}".` : "Belum ada staff."}</td></tr>}
               </tbody>
             </table>
           </div>

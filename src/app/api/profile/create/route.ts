@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+﻿import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 
 export async function POST(request: Request) {
@@ -31,7 +31,8 @@ export async function POST(request: Request) {
       kondisiIbu,
       kondisiAyah,
       statusJamaahIbu,
-      statusJamaahAyah
+      statusJamaahAyah,
+      eventId
     } = body
 
     // 1. Get or Create User via Supabase Client
@@ -110,6 +111,33 @@ export async function POST(request: Request) {
 
        if (insErr) throw insErr;
        profileData = newProfile;
+    }
+
+    // 3. Register to event if eventId provided
+    if (eventId && eventId.trim()) {
+      // Check if already registered
+      const { data: existing } = await supabase
+        .from('EventAttendee')
+        .select('id')
+        .eq('eventId', eventId)
+        .eq('userId', userId)
+        .maybeSingle()
+
+      if (!existing) {
+        const { error: attendeeErr } = await supabase
+          .from('EventAttendee')
+          .insert({
+            eventId,
+            userId,
+            isVerified: false,
+            isCheckedIn: false
+          })
+
+        if (attendeeErr) {
+          console.error("Failed to register event attendee:", attendeeErr)
+          // Don't fail profile creation if event registration fails
+        }
+      }
     }
 
     return NextResponse.json(profileData)

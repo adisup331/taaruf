@@ -105,7 +105,7 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
     if (profileErr) return { ok: false, message: `Gagal buat profil: ${profileErr.message}` };
 
     revalidatePath("/admin/members");
-    return { ok: true, message: `Member "${namaLengkap}" berhasil didaftarkan.`, profileId: newProfile.id };
+    return { ok: true, message: `Member "${namaLengkap}" berhasil didaftarkan.`, profileId: newProfile.id, userId: newUser.id };
   }
 
   async function deleteMember(userId: string): Promise<ActionResult> {
@@ -141,6 +141,7 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
             daerahList={daerahList || []}
             desaList={desaList || []}
             kelompokList={kelompokList || []}
+            activeEvents={activeEvents || []}
           />
         </CardContent>
       </Card>
@@ -173,6 +174,7 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
     </div>
   );
 }
+
 
 
 

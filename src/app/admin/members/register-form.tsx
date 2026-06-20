@@ -4,14 +4,16 @@ import { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { ActionForm } from '@/components/admin-panel/action-form';
 import { SubmitButton } from '@/components/admin-panel/submit-button';
-import { UserPlus, ChevronDown, ChevronUp, X, Plus, Loader2, Upload, ImageIcon } from 'lucide-react';
+import { UserPlus, ChevronDown, ChevronUp, X, Plus, Loader2, Upload, ImageIcon, CalendarPlus, Check } from 'lucide-react';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 interface RegisterFormProps {
   action: (prev: any, fd: FormData) => Promise<any>;
   daerahList: { id: string; nama: string }[];
   desaList: { id: string; nama: string }[];
   kelompokList: { id: string; nama: string }[];
+  activeEvents?: { id: string; title: string }[];
 }
 
 const Sel = ({ name, children, ...props }: any) => (
@@ -157,9 +159,37 @@ export function RegisterMemberForm({
   daerahList,
   desaList,
   kelompokList,
+  activeEvents,
 }: RegisterFormProps) {
   const [showExtra, setShowExtra] = useState(false);
+  const [selectedEventIds, setSelectedEventIds] = useState<string[]>([]);
+  const router = useRouter();
 
+
+  const toggleEvent = (id: string) => {
+    setSelectedEventIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const addToEvents = async (userId: string, eventIds: string[]) => {
+    for (const eventId of eventIds) {
+      try {
+        const res = await fetch(`/api/admin/events/${eventId}/add-members`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userIds: [userId] }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) throw new Error(data.message || "Gagal");
+        toast.success(data.message);
+      } catch (err: any) {
+        toast.error(err.message || "Gagal menambahkan ke event.");
+      }
+    }
+    setSelectedEventIds([]);
+    router.refresh();
+  };
   const [daerahId, setDaerahId] = useState('');
   const [daerahNama, setDaerahNama] = useState('');
   const [desaId, setDesaId] = useState('');
@@ -253,6 +283,7 @@ export function RegisterMemberForm({
     <div>
     <ActionForm action={action} resetOnSuccess onSuccess={(s) => {
       if (s && s.profileId) setCreatedProfileId(s.profileId);
+      if (s && s.userId && selectedEventIds.length > 0) addToEvents(s.userId, selectedEventIds);
       // Reset preview — ref file tetap hidup sampai useEffect upload
       setPhotoPreview(null);
       // Reset cascading asal
@@ -513,8 +544,49 @@ export function RegisterMemberForm({
         </div>
       )}
 
-      <div>
-        <SubmitButton pendingText='Mendaftarkan...' className='w-full sm:w-auto'>
+
+      {/* ── Pilih event + tombol daftar dalam satu row ── */}
+      <div className='flex flex-wrap items-start gap-3 rounded-lg border bg-muted/40 p-3'>
+        <div className='flex-1 space-y-2 min-w-0'>
+          <div className='flex items-center gap-2'>
+            <CalendarPlus className='h-4 w-4 text-muted-foreground flex-shrink-0' />
+            <span className='text-xs font-medium text-muted-foreground'>
+              Daftarkan juga ke event (opsional):
+            </span>
+            {selectedEventIds.length > 0 && (
+              <span className='ml-auto text-xs text-emerald-600 font-medium'>
+                {selectedEventIds.length} event terpilih
+              </span>
+            )}
+          </div>
+          {activeEvents && activeEvents.length > 0 ? (
+            <div className='flex flex-wrap gap-2'>
+              {activeEvents.map((ev) => {
+                const checked = selectedEventIds.includes(ev.id);
+                return (
+                  <button
+                    type='button'
+                    key={ev.id}
+                    onClick={() => toggleEvent(ev.id)}
+                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs transition-colors ${
+                      checked
+                        ? 'border-emerald-500 bg-emerald-50 text-emerald-700 font-semibold'
+                        : 'border-gray-300 bg-background hover:bg-muted'
+                    }`}
+                  >
+                    <span className={`inline-flex items-center justify-center h-3.5 w-3.5 rounded-sm border ${checked ? 'border-emerald-600 bg-emerald-600' : 'border-gray-400'}`}>
+                      {checked && <Check className='h-2.5 w-2.5 text-white' />}
+                    </span>
+                    {ev.title}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <p className='text-xs text-muted-foreground italic'>Belum ada event aktif.</p>
+          )}
+        </div>
+        <SubmitButton pendingText='Mendaftarkan...' className='shrink-0 self-end'>
           <UserPlus className='mr-2 h-4 w-4' /> Daftarkan Member
         </SubmitButton>
       </div>
