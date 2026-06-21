@@ -1,13 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { CheckCircle2, Calendar, MapPin, Clock, Ticket } from "lucide-react";
+import { CheckCircle2, Calendar, MapPin, Clock, Ticket, UserPlus, Hash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { ActionForm } from "@/components/admin-panel/action-form";
 import { SubmitButton } from "@/components/admin-panel/submit-button";
 import { type ActionResult } from "@/lib/action-result";
+import { nextParticipantNumber } from "@/lib/participant";
+import { EventJoinClient } from "./event-join-client";
 
 export default async function EventJoinPage({ params }: { params: { slug: string } }) {
   const supabase = createClient();
@@ -29,13 +31,9 @@ export default async function EventJoinPage({ params }: { params: { slug: string
     );
   }
 
-  // Wajib login dulu
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    redirect(`/login?next=/e/${params.slug}`);
-  }
+  if (!user) redirect(`/login?next=/e/${params.slug}`);
 
-  // Pastikan ada baris User (untuk akun yang belum ter-sync)
   let { data: dbUser } = await supabase
     .from("User")
     .select("id, role")
@@ -56,7 +54,6 @@ export default async function EventJoinPage({ params }: { params: { slug: string
     dbUser = created;
   }
 
-  // Admin/fotografer tidak boleh check-in sebagai peserta
   if (dbUser?.role === "ADMIN" || dbUser?.role === "PHOTOGRAPHER") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-emerald-50 p-6">
@@ -80,7 +77,6 @@ export default async function EventJoinPage({ params }: { params: { slug: string
     );
   }
 
-  // Sudah terdaftar & terverifikasi di event ini?
   const { data: myAttendee } = await supabase
     .from("EventAttendee")
     .select("id, isVerified, participantNumber")
@@ -90,6 +86,25 @@ export default async function EventJoinPage({ params }: { params: { slug: string
 
   const alreadyIn = myAttendee?.isVerified === true;
 
+  // Check if user already has a complete profile
+  const { data: myProfile } = await supabase
+    .from("Profile")
+    .select("id, namaLengkap, fotoProfil, jenisKelamin, tanggalLahir, asalDaerah")
+    .eq("userId", dbUser!.id)
+    .maybeSingle();
+
+  // Master data for cascading selects
+  const [{ data: daerahList }, { data: desaList }, { data: kelompokList }] = await Promise.all([
+    supabase.from("Daerah").select("id, nama").order("nama"),
+    supabase.from("Desa").select("id, nama, daerahId").order("nama"),
+    supabase.from("Kelompok").select("id, nama, desaId").order("nama"),
+  ]);
+
+  const hasCompleteProfile = myProfile
+    && myProfile.namaLengkap && myProfile.namaLengkap !== "-"
+    && myProfile.asalDaerah && myProfile.asalDaerah !== "-"
+    && myProfile.tanggalLahir;
+
   // --- Server Action: klaim nomor peserta ---
   async function claimNumber(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
     "use server";
@@ -97,17 +112,12 @@ export default async function EventJoinPage({ params }: { params: { slug: string
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { ok: false, message: "Sesi habis. Silakan login lagi." };
 
-    const { data: me } = await supabase
-      .from("User")
-      .select("id")
-      .eq("email", user.email)
-      .single();
+    const { data: me } = await supabase.from("User").select("id").eq("email", user.email).single();
     if (!me) return { ok: false, message: "Akun tidak ditemukan." };
 
     const number = (formData.get("participantNumber") as string)?.trim();
     if (!number) return { ok: false, message: "Masukkan nomor peserta kamu." };
 
-    // Cari slot peserta dengan nomor ini di event
     const { data: slot } = await supabase
       .from("EventAttendee")
       .select("id, userId, isVerified")
@@ -115,66 +125,120 @@ export default async function EventJoinPage({ params }: { params: { slug: string
       .eq("participantNumber", number)
       .maybeSingle();
 
-    if (!slot) {
-      return { ok: false, message: `Nomor peserta "${number}" tidak terdaftar di acara ini.` };
-    }
+    if (!slot) return { ok: false, message: `Nomor peserta "${number}" tidak terdaftar di acara ini.` };
 
-    // Sudah milik akun ini → cukup verifikasi
     if (slot.userId === me.id) {
       await supabase.from("EventAttendee").update({ isVerified: true }).eq("id", slot.id);
       revalidatePath(`/e/${params.slug}`);
       return { ok: true, message: "Berhasil masuk event!" };
     }
 
-    // Slot milik akun lain → cek apakah itu placeholder offline (boleh diklaim)
-    const { data: slotUser } = await supabase
-      .from("User")
-      .select("email")
-      .eq("id", slot.userId)
-      .single();
-
+    const { data: slotUser } = await supabase.from("User").select("email").eq("id", slot.userId).single();
     const isOfflinePlaceholder = slotUser?.email?.endsWith("@offline.local");
-    if (!isOfflinePlaceholder) {
-      return { ok: false, message: "Nomor peserta ini sudah diklaim oleh akun lain." };
-    }
+    if (!isOfflinePlaceholder) return { ok: false, message: "Nomor peserta ini sudah diklaim oleh akun lain." };
 
-    // Pastikan akun ini belum punya baris attendee lain di event (hindari duplikat)
     const { data: existingMine } = await supabase
-      .from("EventAttendee")
-      .select("id")
-      .eq("eventId", event.id)
-      .eq("userId", me.id)
-      .maybeSingle();
-    if (existingMine) {
-      await supabase.from("EventAttendee").delete().eq("id", existingMine.id);
-    }
+      .from("EventAttendee").select("id").eq("eventId", event.id).eq("userId", me.id).maybeSingle();
+    if (existingMine) await supabase.from("EventAttendee").delete().eq("id", existingMine.id);
 
-    // Pindahkan Profil studio (foto + biodata) dari placeholder ke akun login
-    const { data: slotProfile } = await supabase
-      .from("Profile")
-      .select("id")
-      .eq("userId", slot.userId)
-      .maybeSingle();
-
+    const { data: slotProfile } = await supabase.from("Profile").select("id").eq("userId", slot.userId).maybeSingle();
     if (slotProfile) {
-      // Hapus profil kosong milik akun login bila ada, lalu re-key profil studio
       await supabase.from("Profile").delete().eq("userId", me.id);
       await supabase.from("Profile").update({ userId: me.id }).eq("id", slotProfile.id);
     }
 
-    // Bind slot ke akun login + verifikasi
-    const { error: bindErr } = await supabase
-      .from("EventAttendee")
-      .update({ userId: me.id, isVerified: true })
-      .eq("id", slot.id);
-
+    const { error: bindErr } = await supabase.from("EventAttendee").update({ userId: me.id, isVerified: true }).eq("id", slot.id);
     if (bindErr) return { ok: false, message: `Gagal klaim: ${bindErr.message}` };
 
     revalidatePath(`/e/${params.slug}`);
     return { ok: true, message: "Berhasil masuk event!" };
   }
 
-  // Tampilan: sudah masuk → info + tombol dashboard
+  // --- Server Action: register baru tanpa nomor (isi biodata -> auto-assign nomor) ---
+  async function registerNew(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+    "use server";
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok: false, message: "Sesi habis." };
+
+    const { data: me } = await supabase.from("User").select("id").eq("email", user.email).single();
+    if (!me) return { ok: false, message: "Akun tidak ditemukan." };
+
+    const g = (k: string) => (formData.get(k) as string)?.trim() || undefined;
+    const gInt = (k: string) => { const v = formData.get(k) as string; return v ? parseInt(v) : undefined; };
+
+    const namaLengkap = g("namaLengkap");
+    const jenisKelamin = formData.get("jenisKelamin") as string;
+    const tanggalLahirRaw = formData.get("tanggalLahir") as string;
+    const fotoProfil = g("fotoProfilUrl");
+
+    if (!namaLengkap || !jenisKelamin || !tanggalLahirRaw) {
+      return { ok: false, message: "Nama, jenis kelamin, dan tanggal lahir wajib diisi." };
+    }
+    if (!fotoProfil) {
+      return { ok: false, message: "Foto profil wajib diupload." };
+    }
+
+    const payload: Record<string, any> = {
+      namaLengkap,
+      jenisKelamin,
+      tanggalLahir: new Date(tanggalLahirRaw).toISOString(),
+      asalDaerah: g("asalDaerah") || "-",
+      asalKelompok: g("asalKelompok") || "-",
+      asalDesa: g("asalDesa") || "-",
+      nomorHp: g("nomorHp") || "-",
+      instagram: g("instagram") || "-",
+      fotoProfil,
+      statusMubaligh: g("statusMubaligh"),
+      pendidikanTerakhir: g("pendidikanTerakhir"),
+      statusPernikahan: g("statusPernikahan") || "Lajang",
+      pekerjaan: g("pekerjaan"),
+      anakKe: gInt("anakKe"),
+      jumlahSaudara: gInt("jumlahSaudara"),
+      dapukanKelompok: g("dapukanKelompok"),
+      dapukanDesa: g("dapukanDesa"),
+      dapukanDaerah: g("dapukanDaerah"),
+      kondisiIbu: g("kondisiIbu"),
+      kondisiAyah: g("kondisiAyah"),
+      statusJamaahIbu: g("statusJamaahIbu"),
+      statusJamaahAyah: g("statusJamaahAyah"),
+      daerahSambung: g("daerahSambung"),
+      desaSambung: g("desaSambung"),
+      kelompokSambung: g("kelompokSambung"),
+    };
+
+    const { data: existing } = await supabase.from("Profile").select("id").eq("userId", me.id).maybeSingle();
+    if (existing) {
+      await supabase.from("Profile").update(payload).eq("userId", me.id);
+    } else {
+      await supabase.from("Profile").insert({ userId: me.id, ...payload, instagram: "-" });
+    }
+
+    // Create EventAttendee with auto-assigned number
+    const { data: alreadyAttendee } = await supabase
+      .from("EventAttendee").select("id, participantNumber, isVerified")
+      .eq("eventId", event.id).eq("userId", me.id).maybeSingle();
+
+    if (alreadyAttendee) {
+      if (!alreadyAttendee.participantNumber) {
+        const num = await nextParticipantNumber(supabase, event.id);
+        await supabase.from("EventAttendee").update({ participantNumber: num, isVerified: true }).eq("id", alreadyAttendee.id);
+      } else {
+        await supabase.from("EventAttendee").update({ isVerified: true }).eq("id", alreadyAttendee.id);
+      }
+    } else {
+      const num = await nextParticipantNumber(supabase, event.id);
+      await supabase.from("EventAttendee").insert({
+        eventId: event.id, userId: me.id, participantNumber: num, isVerified: true, isCheckedIn: false,
+      });
+    }
+
+    revalidatePath(`/e/${params.slug}`);
+    return { ok: true, message: "Berhasil terdaftar!" };
+  }
+
+  // === RENDER ===
+
   if (alreadyIn) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-emerald-50 p-6">
@@ -205,43 +269,16 @@ export default async function EventJoinPage({ params }: { params: { slug: string
     );
   }
 
-  // Tampilan: form klaim nomor peserta
   return (
-    <div className="flex min-h-screen items-center justify-center bg-emerald-50 p-6">
-      <div className="w-full max-w-md space-y-6 rounded-3xl bg-white p-8 text-center shadow-2xl">
-        <div className="flex justify-center">
-          <div className="rounded-full bg-emerald-100 p-4">
-            <Ticket className="h-12 w-12 text-emerald-600" />
-          </div>
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{event.title}</h1>
-          <p className="mt-1 text-gray-500">
-            Masukkan <strong>Nomor Peserta</strong> yang diberikan panitia untuk masuk ke acara.
-          </p>
-        </div>
-
-        <ActionForm action={claimNumber} className="space-y-3">
-          <Input
-            name="participantNumber"
-            inputMode="numeric"
-            placeholder="cth: 12"
-            className="h-16 text-center text-4xl font-black"
-            autoFocus
-            required
-          />
-          <SubmitButton pendingText="Memproses..." className="h-12 w-full rounded-xl bg-emerald-600 font-bold hover:bg-emerald-700">
-            Masuk Event
-          </SubmitButton>
-        </ActionForm>
-
-        <EventMeta event={event} />
-
-        <p className="text-xs text-gray-400">
-          Belum dapat nomor peserta? Temui panitia di meja registrasi.
-        </p>
-      </div>
-    </div>
+    <EventJoinClient
+      event={event}
+      hasCompleteProfile={!!hasCompleteProfile}
+      claimNumber={claimNumber}
+      registerNew={registerNew}
+      daerahList={daerahList || []}
+      desaList={desaList || []}
+      kelompokList={kelompokList || []}
+    />
   );
 }
 
