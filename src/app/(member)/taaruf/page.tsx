@@ -5,6 +5,7 @@ import { HeartHandshake, Inbox, Send, Ticket, QrCodeIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn, photoUrl, memberStatusLabel } from "@/lib/utils";
 import { MemberRealtime } from "@/components/member/MemberRealtime";
+import { Watermark } from "@/components/member/ScreenshotGuard";
 
 export default async function TaarufStatusPage() {
   const supabase = createClient();
@@ -17,6 +18,14 @@ export default async function TaarufStatusPage() {
   if (role === "PHOTOGRAPHER") redirect("/admin/events/photography");
 
   const uid = user.id;
+
+  const { data: myProfile } = await supabase
+    .from("Profile")
+    .select("namaLengkap")
+    .eq("userId", uid)
+    .maybeSingle();
+
+  const viewerName = myProfile?.namaLengkap || user.email || "";
 
   // Event aktif yang member sudah terverifikasi (pola sama seperti dashboard)
   const { data: myAttendances } = await supabase
@@ -105,6 +114,7 @@ export default async function TaarufStatusPage() {
         icon={<Send className="h-4 w-4" />}
         items={sent}
         isBlur={activeEvent.isPhotoBlurred}
+        viewerName={viewerName}
         emptyText="Belum ada permintaan yang kamu kirim. Pilih lawan jenis di halaman Jelajah."
       />
 
@@ -113,6 +123,7 @@ export default async function TaarufStatusPage() {
         icon={<Inbox className="h-4 w-4" />}
         items={incoming}
         isBlur={activeEvent.isPhotoBlurred}
+        viewerName={viewerName}
         emptyText="Belum ada yang mengajukan taaruf ke kamu."
       />
     </div>
@@ -124,12 +135,14 @@ function Section({
   icon,
   items,
   isBlur,
+  viewerName,
   emptyText,
 }: {
   title: string;
   icon: React.ReactNode;
   items: any[];
   isBlur: boolean;
+  viewerName: string;
   emptyText: string;
 }) {
   return (
@@ -142,7 +155,7 @@ function Section({
       ) : (
         <div className="space-y-3">
           {items.map((it) => (
-            <TaarufItem key={it.id} item={it} isBlur={isBlur} />
+            <TaarufItem key={it.id} item={it} isBlur={isBlur} viewerName={viewerName} />
           ))}
         </div>
       )}
@@ -150,7 +163,7 @@ function Section({
   );
 }
 
-function TaarufItem({ item, isBlur }: { item: any; isBlur: boolean }) {
+function TaarufItem({ item, isBlur, viewerName }: { item: any; isBlur: boolean; viewerName: string }) {
   const lawan = item.lawan;
   const age = lawan?.tanggalLahir
     ? new Date().getFullYear() - new Date(lawan.tanggalLahir).getFullYear()
@@ -160,7 +173,7 @@ function TaarufItem({ item, isBlur }: { item: any; isBlur: boolean }) {
 
   return (
     <div className="flex items-center gap-4 rounded-3xl border border-gray-100 bg-white p-4 shadow-sm active:scale-[0.98] transition-transform">
-      <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-[1.25rem] bg-gray-50 border border-gray-50">
+      <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-[1.25rem] bg-gray-50 border border-gray-50 screenshot-guard">
         <Image
           src={photoUrl(lawan?.fotoProfil) || "/placeholder-user.jpg"}
           alt={lawan?.namaLengkap || "Foto"}
@@ -168,6 +181,7 @@ function TaarufItem({ item, isBlur }: { item: any; isBlur: boolean }) {
           unoptimized
           className={cn("object-cover", isBlur ? "blur-xl grayscale scale-110" : "")}
         />
+        <Watermark text={viewerName} />
       </div>
 
       <div className="min-w-0 flex-1">

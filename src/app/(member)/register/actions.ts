@@ -23,8 +23,8 @@ export async function registerManualMember(
   if (!username || !password || !namaLengkap) {
     return { ok: false, message: "Username, password, dan nama wajib diisi." };
   }
-  if (!/^[a-z0-9_]{3,20}$/.test(username)) {
-    return { ok: false, message: "Username 3-20 karakter, hanya huruf kecil, angka, underscore." };
+  if (username.length < 3 || username.length > 30) {
+    return { ok: false, message: "Username minimal 3 karakter, maksimal 30 karakter." };
   }
   if (password.length < 6) {
     return { ok: false, message: "Password minimal 6 karakter." };

@@ -13,6 +13,7 @@ import { ActionForm } from "@/components/admin-panel/action-form";
 import { SubmitButton } from "@/components/admin-panel/submit-button";
 import { CascadingWilayah } from "@/components/member/CascadingWilayah";
 import { updateProfile } from "./actions";
+import { Watermark } from "@/components/member/ScreenshotGuard";
 
 interface ProfileViewProps {
   profile: any;
@@ -285,7 +286,7 @@ export function ProfileView({ profile, daerahList, desaList, kelompokList }: Pro
       <div className="bg-white rounded-[2.5rem] border border-gray-100 p-8 shadow-xl shadow-gray-100/50 space-y-8 relative overflow-hidden">
         <div className="space-y-3 text-center">
           {/* Foto Profil */}
-          <div className="relative mx-auto h-24 w-24 rounded-full overflow-hidden border-4 border-emerald-50 shadow-lg bg-gray-50 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => fileRef.current?.click()}>
+          <div className="relative mx-auto h-24 w-24 rounded-full overflow-hidden border-4 border-emerald-50 shadow-lg bg-gray-50 cursor-pointer hover:opacity-80 transition-opacity screenshot-guard" onContextMenu={(e) => e.preventDefault()} onClick={() => fileRef.current?.click()}>
             {fotoPreview ? (
               <Image src={fotoPreview} fill className="object-cover" alt="Foto Profil" unoptimized />
             ) : (
@@ -296,7 +297,9 @@ export function ProfileView({ profile, daerahList, desaList, kelompokList }: Pro
                 <CircularProgress progress={uploadProgress} />
               </div>
             )}
+            <Watermark text={profile.namaLengkap} />
           </div>
+          
           <h2 className="text-3xl font-black text-gray-900">{profile.namaLengkap}</h2>
           <Badge variant="secondary" className="bg-emerald-50 text-emerald-700 border-none font-bold px-4 py-1.5 rounded-full">
             {profile.jenisKelamin === "IKHWAN" ? "Laki-Laki" : "Perempuan"}

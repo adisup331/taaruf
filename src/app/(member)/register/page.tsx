@@ -88,14 +88,13 @@ export default function MemberRegisterPage() {
             <Input
               name="username"
               required
-              placeholder="huruf kecil, angka, underscore"
-              pattern="[a-z0-9_]{3,20}"
-              title="3-20 karakter: huruf kecil, angka, underscore"
+              placeholder="bebas, contoh: ahmad123"
+              title="bebas, minimal 3 karakter"
             />
           </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-gray-600">Password</label>
-            <Input name="password" type="password" required minLength={6} placeholder="minimal 6 karakter" />
+            <Input name="password" type="password" required minLength={6} placeholder="bebas, minimal 6 karakter" />
           </div>
 
           <Button

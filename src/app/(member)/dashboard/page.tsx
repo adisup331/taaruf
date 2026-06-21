@@ -27,7 +27,7 @@ export default async function MemberDashboard() {
       .eq('isVerified', true),
     supabase
       .from('Profile')
-      .select('jenisKelamin')
+      .select('namaLengkap, jenisKelamin')
       .eq('userId', uid)
       .maybeSingle()
   ]);
@@ -154,6 +154,7 @@ export default async function MemberDashboard() {
                 eventId={activeEvent.id}
                 isEventBlurActive={activeEvent.isPhotoBlurred}
                 targetUserId={p.userId}
+                viewerName={userProfile.namaLengkap}
                 alreadyRequested={sentSet.has(p.userId)}
                 lockType={lock || null}
               />

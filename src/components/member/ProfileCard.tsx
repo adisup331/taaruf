@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Image from "next/image";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -9,8 +9,9 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Maximize2, X, ChevronDown, MapPin, Home, Users, Calendar, ArrowLeft } from "lucide-react";
 import { Badge } from "../ui/badge";
+import { Watermark } from "./ScreenshotGuard";
 
-export function ProfileCard({ profile, eventId, isEventBlurActive, targetUserId, alreadyRequested = false, lockType = null }: any) {
+export function ProfileCard({ profile, eventId, isEventBlurActive, targetUserId, alreadyRequested = false, lockType = null, viewerName = "" }: any) {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(alreadyRequested);
   const [zoomImage, setZoomImage] = useState<string | null>(null);
@@ -63,7 +64,7 @@ export function ProfileCard({ profile, eventId, isEventBlurActive, targetUserId,
       <Dialog>
         {/* Cover foto â€” klik buka detail */}
         <DialogTrigger asChild>
-          <div className="relative h-[440px] cursor-pointer overflow-hidden">
+          <div className="relative h-[440px] cursor-pointer overflow-hidden screenshot-guard" onContextMenu={(e) => e.preventDefault()}>
             <Image
               src={photoUrl(profile.fotoProfil) || photoUrl(profile.fotoEvent) || "/placeholder-user.jpg"}
               className={cn(
@@ -76,6 +77,7 @@ export function ProfileCard({ profile, eventId, isEventBlurActive, targetUserId,
               loading="lazy"
               sizes="(max-width: 430px) 100vw, 430px"
             />
+            {!isEventBlurActive && <Watermark text={viewerName} />}
 
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60" />
 
@@ -122,12 +124,14 @@ export function ProfileCard({ profile, eventId, isEventBlurActive, targetUserId,
                 {profile.fotoProfil && (
                   <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-gray-50 cursor-pointer hover:ring-2 hover:ring-emerald-300 transition-all" onClick={() => setZoomImage(photoUrl(profile.fotoProfil)!)}>
                     <Image src={photoUrl(profile.fotoProfil)!} fill className="object-cover" alt="Foto Profil" unoptimized />
+                    <Watermark text={viewerName} />
                     <span className="absolute bottom-2 left-2 text-white text-[9px] font-bold bg-black/50 px-2 py-0.5 rounded-full">Utama</span>
                   </div>
                 )}
                 {profile.fotoEvent && (
                   <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-gray-50 cursor-pointer hover:ring-2 hover:ring-emerald-300 transition-all" onClick={() => setZoomImage(photoUrl(profile.fotoEvent)!)}>
                     <Image src={photoUrl(profile.fotoEvent)!} fill className="object-cover" alt="Foto Event" unoptimized />
+                    <Watermark text={viewerName} />
                     <span className="absolute bottom-2 left-2 text-emerald-300 text-[9px] font-bold bg-black/50 px-2 py-0.5 rounded-full">Event</span>
                   </div>
                 )}
@@ -226,6 +230,7 @@ export function ProfileCard({ profile, eventId, isEventBlurActive, targetUserId,
               <div className="flex-1 flex items-center justify-center p-4">
                 <div className="relative w-full max-w-md aspect-[3/4]">
                   <Image src={zoomImage} fill className="object-contain" alt="Zoom" unoptimized />
+                  <Watermark text={viewerName} />
                 </div>
               </div>
             </div>
@@ -285,4 +290,3 @@ function InfoRow({ icon, label, value, last = false }: { icon: React.ReactNode; 
     </div>
   );
 }
-
