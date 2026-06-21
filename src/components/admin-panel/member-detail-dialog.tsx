@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -18,9 +18,10 @@ function calculateAge(dob: string | null) {
 
 export function MemberDetailDialog({ profile }: MemberDetailDialogProps) {
   const [detailOpen, setDetailOpen] = useState(false)
-  const [viewPhoto, setViewPhoto] = useState(false)
+  const [viewPhoto, setViewPhoto] = useState<string | null>(null)
 
   const imageUrl = photoUrl(profile.fotoProfil)
+  const eventImageUrl = photoUrl(profile.fotoEvent)
 
   return (
     <>
@@ -42,25 +43,25 @@ export function MemberDetailDialog({ profile }: MemberDetailDialogProps) {
       {detailOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-          onClick={() => { setDetailOpen(false); setViewPhoto(false) }}
+          onClick={() => { setDetailOpen(false); setViewPhoto(null) }}
         >
           <div
             className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* ===== View: Foto Besar ===== */}
-            {viewPhoto && imageUrl ? (
+            {viewPhoto ? (
               <div className="p-4 space-y-4">
                 <button
                   type="button"
-                  onClick={() => setViewPhoto(false)}
+                  onClick={() => setViewPhoto(null)}
                   className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-100 transition-colors w-full"
                 >
                   <ArrowLeft className="h-5 w-5" />
                   Kembali ke Detail
                 </button>
                 <div className="rounded-2xl overflow-hidden bg-black">
-                  <img src={imageUrl} alt={profile.namaLengkap} className="w-full object-contain max-h-[70vh]" />
+                  <img src={viewPhoto} alt={profile.namaLengkap} className="w-full object-contain max-h-[70vh]" />
                 </div>
                 <p className="text-center text-sm font-bold text-gray-900">{profile.namaLengkap}</p>
               </div>
@@ -69,7 +70,7 @@ export function MemberDetailDialog({ profile }: MemberDetailDialogProps) {
               <>
                 {/* Close button */}
                 <button
-                  onClick={() => { setDetailOpen(false); setViewPhoto(false) }}
+                  onClick={() => { setDetailOpen(false); setViewPhoto(null) }}
                   className="absolute right-4 top-4 z-10 rounded-full bg-white/80 p-2 hover:bg-white transition-colors shadow-md"
                 >
                   <X className="h-5 w-5 text-gray-600" />
@@ -79,7 +80,7 @@ export function MemberDetailDialog({ profile }: MemberDetailDialogProps) {
                 <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-8 text-center text-white">
                   <div
                     className={`relative mx-auto h-32 w-32 rounded-full overflow-hidden border-4 border-white shadow-xl mb-4 ${imageUrl ? "cursor-pointer hover:scale-105 transition-transform" : ""}`}
-                    onClick={() => { if (imageUrl) setViewPhoto(true) }}
+                    onClick={() => { if (imageUrl) setViewPhoto(imageUrl) }}
                   >
                     {imageUrl ? (
                       <img src={imageUrl} alt={profile.namaLengkap} className="h-full w-full object-cover" />
@@ -89,12 +90,33 @@ export function MemberDetailDialog({ profile }: MemberDetailDialogProps) {
                       </div>
                     )}
                   </div>
-                  {imageUrl && <p className="text-[10px] text-emerald-100 mb-2">Tap foto untuk memperbesar</p>}
+                  {(imageUrl || eventImageUrl) && <p className="text-[10px] text-emerald-100 mb-2">Tap foto untuk memperbesar</p>}
                   <h2 className="text-2xl font-black mb-2">{profile.namaLengkap}</h2>
                   <Badge className="bg-white/20 text-white border-none font-bold px-4 py-1">
                     {genderLabel(profile.jenisKelamin)}
                   </Badge>
                 </div>
+
+                {/* Foto Grid */}
+                {(imageUrl || eventImageUrl) && (
+                  <div className="px-6 pt-5">
+                    <p className="text-xs font-bold uppercase text-gray-400 mb-3">Foto</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {imageUrl && (
+                        <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-gray-100 cursor-pointer hover:ring-2 hover:ring-emerald-300 transition-all" onClick={() => setViewPhoto(imageUrl)}>
+                          <img src={imageUrl} alt="Foto Profil" className="h-full w-full object-cover" />
+                          <span className="absolute bottom-2 left-2 text-white text-[9px] font-bold bg-black/50 px-2 py-0.5 rounded-full">Profil</span>
+                        </div>
+                      )}
+                      {eventImageUrl && (
+                        <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-gray-100 cursor-pointer hover:ring-2 hover:ring-emerald-300 transition-all" onClick={() => setViewPhoto(eventImageUrl)}>
+                          <img src={eventImageUrl} alt="Foto Event" className="h-full w-full object-cover" />
+                          <span className="absolute bottom-2 left-2 text-emerald-300 text-[9px] font-bold bg-black/50 px-2 py-0.5 rounded-full">Event</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Body detail */}
                 <div className="p-6 space-y-6">

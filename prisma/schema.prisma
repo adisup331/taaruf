@@ -25,6 +25,7 @@ enum RequestStatus {
   LANJUT
   SL
   TIDAK_LANJUT
+  DISERAHKAN_PENGURUS
 }
 
 model User {
@@ -117,6 +118,7 @@ model TaarufRequest {
   sessionId    String
   status       RequestStatus @default(PENDING)
   tableNumber  Int?
+  createdAt    DateTime      @default(now())
 
   sender       User          @relation("Sender", fields: [senderId], references: [id])
   receiver     User          @relation("Receiver", fields: [receiverId], references: [id])

@@ -13,9 +13,10 @@ export async function updateSession(request: NextRequest) {
       cookies: {
         get(name) { return request.cookies.get(name)?.value },
         set(name, value, options) {
-          request.cookies.set({ name, value, ...options })
+          const opts = { ...options, maxAge: 365 * 24 * 60 * 60 }
+          request.cookies.set({ name, value, ...opts })
           response = NextResponse.next({ request: { headers: request.headers } })
-          response.cookies.set({ name, value, ...options })
+          response.cookies.set({ name, value, ...opts })
         },
         remove(name, options) {
           request.cookies.set({ name, value: '', ...options })

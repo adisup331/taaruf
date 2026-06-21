@@ -57,7 +57,7 @@ export default async function PrintMatchPage({ params }: { params: { id: string 
       <div className="mt-8 border-2 border-black rounded-xl p-5">
         <h3 className="text-center text-lg font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-4">Hasil Keputusan Taaruf</h3>
         <div className="flex justify-around items-center">
-          {["Lanjut", "Lamaran (SL)", "Tidak Lanjut"].map(label => (
+          {["Lanjut", "Lamaran (SL)", "Tidak Lanjut", "Diserahkan Pengurus Daerah"].map(label => (
             <div key={label} className="flex items-center gap-3">
               <div className="h-8 w-8 border-4 border-black rounded" />
               <span className="text-lg font-bold">{label}</span>

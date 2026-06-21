@@ -75,14 +75,15 @@ export default async function MemberDashboard() {
       .eq('isVerified', true),
     supabase
       .from('TaarufRequest')
-      .select('receiverId')
+      .select('receiverId, status')
       .eq('senderId', uid)
       .eq('eventId', activeEvent.id)
-      .in('status', ['PENDING', 'APPROVED', 'LANJUT', 'SL'])
+      .in('status', ['PENDING', 'APPROVED', 'LANJUT', 'SL', 'DISERAHKAN_PENGURUS'])
   ]);
 
   const attendeeUserIds = allAttendees?.map(a => a.userId) || [];
   const sentSet = new Set((myRequests || []).map((r: any) => r.receiverId));
+  const hasPendingRequest = (myRequests || []).some((r: any) => r.status === "PENDING");
 
   let profiles: any[] = [];
   // Map userId → status lock: "taaruf" (APPROVED/LANJUT/SL) atau "pending" (PENDING dari orang lain)
@@ -100,14 +101,14 @@ export default async function MemberDashboard() {
         .from('TaarufRequest')
         .select('senderId, receiverId, status')
         .eq('eventId', activeEvent.id)
-        .in('status', ['PENDING', 'APPROVED', 'LANJUT', 'SL'])
+        .in('status', ['PENDING', 'APPROVED', 'LANJUT', 'SL', 'DISERAHKAN_PENGURUS'])
     ]);
 
     if (oppositeProfiles && oppositeProfiles.length > 0) {
       // Tentukan status lock per user
       // Prioritas: taaruf aktif (APPROVED/LANJUT/SL) > pending dari orang lain
       allRequests?.forEach(req => {
-        const isTaarufAktif = ['APPROVED', 'LANJUT', 'SL'].includes(req.status);
+        const isTaarufAktif = ['APPROVED', 'LANJUT', 'SL', 'DISERAHKAN_PENGURUS'].includes(req.status);
         const isPending = req.status === 'PENDING';
 
         for (const userId of [req.senderId, req.receiverId]) {
@@ -156,7 +157,7 @@ export default async function MemberDashboard() {
                 targetUserId={p.userId}
                 viewerName={userProfile.namaLengkap}
                 alreadyRequested={sentSet.has(p.userId)}
-                lockType={lock || null}
+                lockType={hasPendingRequest ? "has_pending" : (lock || null)}
               />
             );
           })

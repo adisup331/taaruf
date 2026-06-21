@@ -12,13 +12,13 @@ import { DeleteConfirmButton } from "@/components/admin-panel/delete-confirm-but
 
 const TABS = [
   { key: "active", label: "Aktif", statuses: ["PENDING", "APPROVED"] },
-  { key: "lanjut", label: "Lanjut / SL", statuses: ["LANJUT", "SL"] },
+  { key: "lanjut", label: "Lanjut / SL", statuses: ["LANJUT", "SL", "DISERAHKAN_PENGURUS"] },
   { key: "tidak", label: "Tidak Lanjut", statuses: ["TIDAK_LANJUT"] },
   { key: "all", label: "Semua", statuses: [] },
 ];
 
 const statusVariant = (s: string) =>
-  s === "APPROVED" || s === "LANJUT" || s === "SL" ? "default" : "secondary";
+  s === "APPROVED" || s === "LANJUT" || s === "SL" || s === "DISERAHKAN_PENGURUS" ? "default" : "secondary";
 
 interface Props {
   requests: any[];
@@ -46,7 +46,7 @@ export function MatchDesk({
 
   const counts: Record<string, number> = {
     active: requests.filter(r => ["PENDING", "APPROVED"].includes(r.status)).length,
-    lanjut: requests.filter(r => ["LANJUT", "SL"].includes(r.status)).length,
+    lanjut: requests.filter(r => ["LANJUT", "SL", "DISERAHKAN_PENGURUS"].includes(r.status)).length,
     tidak: requests.filter(r => r.status === "TIDAK_LANJUT").length,
     all: requests.length,
   };
@@ -89,13 +89,16 @@ export function MatchDesk({
             <Card key={req.id} className="overflow-hidden">
               <CardContent className="flex flex-col items-center gap-6 p-4 md:flex-row md:justify-between relative pt-8 md:pt-4">
                 <div className="absolute top-0 left-0 bg-muted px-3 py-1 rounded-br-lg text-[10px] font-mono font-bold text-muted-foreground border-r border-b">
-                  KODE: {shortId}
+                  KODE: {shortId} {req.createdAt && <span className="ml-2 text-muted-foreground/70">{new Date(req.createdAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })} {new Date(req.createdAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}</span>}
                 </div>
 
                 <div className="flex-1 text-center md:text-left mt-5">
                   <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">PENGIRIM</p>
                   <h4 className="font-bold text-lg">{req.senderProfile?.namaLengkap || "-"}</h4>
                   <p className="text-sm text-muted-foreground">{req.senderProfile?.asalKelompok}</p>
+                  {req.senderProfile?.daerahSambung && (
+                    <p className="text-xs text-emerald-600 font-medium">Sambung: {req.senderProfile.daerahSambung}</p>
+                  )}
                   {senderNum && <Badge variant="outline" className="mt-1 text-[10px]">No. {senderNum}</Badge>}
                 </div>
 
@@ -111,6 +114,9 @@ export function MatchDesk({
                   <p className="text-xs font-medium text-muted-foreground">PENERIMA</p>
                   <h4 className="font-semibold">{req.receiverProfile?.namaLengkap || "-"}</h4>
                   <p className="text-sm text-muted-foreground">{req.receiverProfile?.asalKelompok}</p>
+                  {req.receiverProfile?.daerahSambung && (
+                    <p className="text-xs text-emerald-600 font-medium">Sambung: {req.receiverProfile.daerahSambung}</p>
+                  )}
                   {receiverNum && <Badge variant="outline" className="mt-1 text-[10px]">No. {receiverNum}</Badge>}
                 </div>
 
@@ -136,6 +142,7 @@ export function MatchDesk({
                       <option value="LANJUT">Lanjut</option>
                       <option value="SL">Lamaran (SL)</option>
                       <option value="TIDAK_LANJUT">Tidak Lanjut</option>
+                      <option value="DISERAHKAN_PENGURUS">Diserahkan Pengurus Daerah</option>
                     </select>
                     <SubmitButton size="sm" pendingText="...">Update</SubmitButton>
                   </ActionForm>

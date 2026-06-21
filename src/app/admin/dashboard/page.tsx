@@ -18,7 +18,7 @@ export default async function AdminDashboard() {
     supabase.from('User').select('*', { count: 'exact', head: true }).eq('role', 'MEMBER'),
     supabase.from('TaarufRequest').select('*', { count: 'exact', head: true }).eq('status', 'PENDING'),
     supabase.from('TaarufRequest').select('*', { count: 'exact', head: true }).eq('status', 'APPROVED'),
-    supabase.from('TaarufRequest').select('*', { count: 'exact', head: true }).in('status', ['LANJUT', 'SL']),
+    supabase.from('TaarufRequest').select('*', { count: 'exact', head: true }).in('status', ['LANJUT', 'SL', 'DISERAHKAN_PENGURUS']),
     supabase.from('EventAttendee').select('*', { count: 'exact', head: true }).eq('isCheckedIn', true),
   ]);
 

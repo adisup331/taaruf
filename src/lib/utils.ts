@@ -19,6 +19,7 @@ export function statusLabel(status?: string | null) {
   if (status === "LANJUT") return "Lanjut"
   if (status === "SL") return "Lamaran"
   if (status === "TIDAK_LANJUT") return "Tidak Lanjut"
+  if (status === "DISERAHKAN_PENGURUS") return "Diserahkan Pengurus Daerah"
   return status || "-"
 }
 
@@ -29,6 +30,7 @@ export function statusLabel(status?: string | null) {
 export function memberStatusLabel(status?: string | null): string | null {
   if (status === "PENDING") return "Menunggu"
   if (status === "APPROVED") return "Sedang Taaruf"
+  if (status === "DISERAHKAN_PENGURUS") return "Diserahkan Pengurus Daerah"
   return null
 }
 

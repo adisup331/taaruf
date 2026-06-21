@@ -42,8 +42,8 @@ export default async function LiveMatchingPage({
       .from("TaarufRequest")
       .select(`
         id, status, tableNumber, senderId, receiverId,
-        sender:User!TaarufRequest_senderId_fkey ( Profile ( namaLengkap, asalKelompok ) ),
-        receiver:User!TaarufRequest_receiverId_fkey ( Profile ( namaLengkap, asalKelompok ) )
+        sender:User!TaarufRequest_senderId_fkey ( Profile ( namaLengkap, asalKelompok, daerahSambung ) ),
+        receiver:User!TaarufRequest_receiverId_fkey ( Profile ( namaLengkap, asalKelompok, daerahSambung ) )
       `)
       .eq("eventId", selectedEventId)
       .order("id", { ascending: false });

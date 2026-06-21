@@ -27,10 +27,12 @@ export function ProfileCard({ profile, eventId, isEventBlurActive, targetUserId,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ receiverId: targetUserId, eventId }),
       });
-      if (!res.ok) throw new Error("failed");
+      let data: any = {};
+      try { data = await res.json(); } catch { data = { ok: false, message: "Gagal mengirim permintaan." }; }
+      if (!res.ok || data.ok === false) throw new Error(data.message || "failed");
       setSent(true);
-    } catch {
-      alert("Gagal mengirim permintaan. Coba lagi.");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Gagal mengirim permintaan. Coba lagi.");
     } finally {
       setLoading(false);
     }
@@ -42,6 +44,8 @@ export function ProfileCard({ profile, eventId, isEventBlurActive, targetUserId,
     ? "Sedang Diproses Orang Lain"
     : alreadyRequested
     ? "Sudah Diminta âœ“"
+    : lockType === "has_pending"
+    ? "Tunggu Permintaan Sebelumnya"
     : sent
     ? "Terkirim âœ“"
     : loading
@@ -52,6 +56,8 @@ export function ProfileCard({ profile, eventId, isEventBlurActive, targetUserId,
     ? "bg-amber-50 text-amber-500 border border-amber-200 shadow-none"
     : lockType === "pending"
     ? "bg-orange-50 text-orange-400 border border-orange-200 shadow-none"
+    : lockType === "has_pending"
+    ? "bg-blue-50 text-blue-500 border border-blue-200 shadow-none"
     : sent
     ? "bg-gray-100 text-gray-400"
     : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200";

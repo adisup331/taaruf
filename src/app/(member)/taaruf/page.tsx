@@ -72,7 +72,7 @@ export default async function TaarufStatusPage() {
     .order("id", { ascending: false });
 
   // Member hanya boleh lihat PENDING/APPROVED. Status internal disembunyikan.
-  const VISIBLE = new Set(["PENDING", "APPROVED"]);
+  const VISIBLE = new Set(["PENDING", "APPROVED", "DISERAHKAN_PENGURUS"]);
 
   const items = (rawRequests || [])
     .filter((r: any) => VISIBLE.has(r.status))

@@ -5,11 +5,11 @@ export async function POST(request: Request) {
   try {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return new NextResponse("Unauthorized", { status: 401 });
+    if (!user) return NextResponse.json({ ok: false, message: "Sesi habis. Silakan login lagi." }, { status: 401 });
 
     const { receiverId, eventId } = await request.json();
     if (!receiverId || !eventId) {
-      return new NextResponse("Missing fields", { status: 400 });
+      return NextResponse.json({ ok: false, message: "Data tidak lengkap." }, { status: 400 });
     }
 
     // Resolve sender's DB user id
@@ -19,7 +19,23 @@ export async function POST(request: Request) {
       .eq("email", user.email)
       .single();
 
-    if (!dbUser) return new NextResponse("User not found", { status: 404 });
+    if (!dbUser) return NextResponse.json({ ok: false, message: "Akun tidak ditemukan." }, { status: 404 });
+
+    // Block jika sender sudah punya PENDING request ke siapapun di event ini
+    const { data: pendingExists } = await supabase
+      .from("TaarufRequest")
+      .select("id")
+      .eq("senderId", dbUser.id)
+      .eq("eventId", eventId)
+      .eq("status", "PENDING")
+      .maybeSingle();
+
+    if (pendingExists) {
+      return NextResponse.json(
+        { ok: false, message: "Kamu masih punya permintaan yang menunggu. Tunggu sampai diproses sebelum mengajukan ke orang lain." },
+        { status: 400 }
+      );
+    }
 
     // Avoid duplicate pending/active request to same receiver in same event
     const { data: existing } = await supabase
@@ -28,7 +44,7 @@ export async function POST(request: Request) {
       .eq("senderId", dbUser.id)
       .eq("receiverId", receiverId)
       .eq("eventId", eventId)
-      .in("status", ["PENDING", "APPROVED", "LANJUT", "SL"])
+      .in("status", ["PENDING", "APPROVED", "LANJUT", "SL", "DISERAHKAN_PENGURUS"])
       .maybeSingle();
 
     if (existing) {
@@ -44,12 +60,12 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error(error);
-      return new NextResponse("Insert failed", { status: 500 });
+      return NextResponse.json({ ok: false, message: "Gagal menyimpan permintaan." }, { status: 500 });
     }
 
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error(e);
-    return new NextResponse("Internal Server Error", { status: 500 });
+    return NextResponse.json({ ok: false, message: "Terjadi kesalahan server." }, { status: 500 });
   }
 }
