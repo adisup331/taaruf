@@ -6,10 +6,22 @@ import { ContactList } from "./contact-list";
 export default async function ContactsPage() {
   const supabase = createClient();
 
-  const { data: daerahList } = await supabase
-    .from("Daerah")
-    .select("id, nama, contactName, contactWhatsapp")
-    .order("nama");
+  const [{ data: daerahList }, { data: profiles }] = await Promise.all([
+    supabase
+      .from("Daerah")
+      .select("id, nama, contactName, contactWhatsapp")
+      .order("nama"),
+    supabase
+      .from("Profile")
+      .select("daerahSambung"),
+  ]);
+
+  const memberCounts: Record<string, number> = {};
+  profiles?.forEach((p: any) => {
+    if (p.daerahSambung) {
+      memberCounts[p.daerahSambung] = (memberCounts[p.daerahSambung] || 0) + 1;
+    }
+  });
 
   async function updateContact(
     id: string,
@@ -37,10 +49,10 @@ export default async function ContactsPage() {
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Kontak Tim Daerah</h2>
         <p className="text-muted-foreground text-sm">
-          Kelola nama PIC dan nomor WhatsApp untuk setiap daerah.
+          Kelola nama PIC dan nomor WhatsApp per daerah sambung.
         </p>
       </div>
-      <ContactList daerahList={daerahList || []} updateContact={updateContact} />
+      <ContactList daerahList={daerahList || []} memberCounts={memberCounts} updateContact={updateContact} />
     </div>
   );
 }
