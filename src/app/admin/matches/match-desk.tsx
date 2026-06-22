@@ -183,6 +183,7 @@ export function MatchDesk({
                   <ArrowRight className="h-5 w-5 text-muted-foreground" />
                   <Badge variant={statusVariant(req.status)}>{statusLabel(req.status)}</Badge>
                   {req.tableNumber && <span className="text-xs text-muted-foreground">Meja {req.tableNumber}</span>}
+                  {req.bioPin && <span className="text-xs font-mono text-amber-600 font-bold">PIN: {req.bioPin}</span>}
                 </div>
 
                 <div className="flex-1 text-center md:text-right">

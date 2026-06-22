@@ -44,7 +44,7 @@ export default async function LiveMatchingPage({
     let rq = supabase
       .from("TaarufRequest")
       .select(`
-        id, status, tableNumber, senderId, receiverId,
+        id, status, tableNumber, senderId, receiverId, bioPin,
         sender:User!TaarufRequest_senderId_fkey ( Profile ( namaLengkap, asalKelompok, daerahSambung, nomorHp ) ),
         receiver:User!TaarufRequest_receiverId_fkey ( Profile ( namaLengkap, asalKelompok, daerahSambung, nomorHp ) )
       `)

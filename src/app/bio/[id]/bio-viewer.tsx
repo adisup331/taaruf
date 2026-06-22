@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Lock, Eye, Phone, MapPin, Calendar, Briefcase, GraduationCap, Heart, User, Baby, Users2 } from "lucide-react";
+import { Lock, Eye, Phone, MapPin, Calendar, Briefcase, GraduationCap, Heart, User, Baby, Users2, X, ArrowLeft } from "lucide-react";
 import { genderLabel, statusLabel, photoUrl } from "@/lib/utils";
 
 function calculateAge(dob: string | null) {
@@ -26,6 +26,7 @@ export function BioViewer({ matchId, pin, status, tableNumber, profile1, profile
   const [inputPin, setInputPin] = useState("");
   const [unlocked, setUnlocked] = useState(false);
   const [error, setError] = useState("");
+  const [viewPhoto, setViewPhoto] = useState<string | null>(null);
 
   function handleUnlock() {
     if (inputPin === pin) {
@@ -87,16 +88,24 @@ export function BioViewer({ matchId, pin, status, tableNumber, profile1, profile
       {/* Profiles */}
       <div className="max-w-4xl mx-auto p-4 space-y-4">
         <div className="grid gap-4 md:grid-cols-2">
-          <ProfileCard label="Biodata 1" profile={profile1} />
-          <ProfileCard label="Biodata 2" profile={profile2} />
+          <ProfileCard label="Biodata 1" profile={profile1} viewPhoto={viewPhoto} setViewPhoto={setViewPhoto} />
+          <ProfileCard label="Biodata 2" profile={profile2} viewPhoto={viewPhoto} setViewPhoto={setViewPhoto} />
         </div>
+        {viewPhoto && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setViewPhoto(null)}>
+            <div className="relative max-w-lg w-full" onClick={(e) => e.stopPropagation()}>
+              <button onClick={() => setViewPhoto(null)} className="absolute -top-12 right-0 rounded-full bg-white/20 p-2 hover:bg-white/40 transition-colors"><X className="h-6 w-6 text-white" /></button>
+              <div className="rounded-2xl overflow-hidden bg-black"><img src={viewPhoto} alt="Foto" className="w-full object-contain max-h-[80vh]" /></div>
+            </div>
+          </div>
+        )}
         <p className="text-center text-[10px] text-gray-400 pt-4">TaarufYuk &middot; {new Date().toLocaleDateString("id-ID")}</p>
       </div>
     </div>
   );
 }
 
-function ProfileCard({ label, profile: p }: { label: string; profile: any }) {
+function ProfileCard({ label, profile: p, viewPhoto, setViewPhoto }: { label: string; profile: any; viewPhoto: string | null; setViewPhoto: (url: string | null) => void }) {
   if (!p) return (
     <div className="rounded-2xl border-2 border-dashed p-8 text-center text-gray-400 font-bold bg-white">{label}: Data tidak tersedia</div>
   );
@@ -109,7 +118,8 @@ function ProfileCard({ label, profile: p }: { label: string; profile: any }) {
       {/* Header */}
       <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 p-4 text-white">
         <div className="flex items-center gap-4">
-          <div className="h-20 w-20 shrink-0 rounded-full border-2 border-white overflow-hidden bg-emerald-300">
+          <div className={`h-20 w-20 shrink-0 rounded-full border-2 border-white overflow-hidden bg-emerald-300 ${imageUrl ? "cursor-pointer hover:scale-105 transition-transform" : ""}`}
+            onClick={() => { if (imageUrl) setViewPhoto(imageUrl); }}>
             {imageUrl ? (
               <img src={imageUrl} alt={p.namaLengkap} className="h-full w-full object-cover" />
             ) : (
@@ -124,6 +134,29 @@ function ProfileCard({ label, profile: p }: { label: string; profile: any }) {
           </div>
         </div>
       </div>
+
+      {/* Foto */}
+      {(photoUrl(p.fotoProfil) || photoUrl(p.fotoEvent)) && (
+        <div className="px-4 pt-4">
+          <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Foto</p>
+          <div className="grid grid-cols-2 gap-2">
+            {photoUrl(p.fotoProfil) && (
+              <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-gray-100 cursor-pointer hover:ring-2 hover:ring-emerald-300 transition-all"
+                onClick={() => setViewPhoto(photoUrl(p.fotoProfil)!)}>
+                <img src={photoUrl(p.fotoProfil)!} alt="Foto Profil" className="h-full w-full object-cover" />
+                <span className="absolute bottom-1.5 left-1.5 text-white text-[9px] font-bold bg-black/50 px-2 py-0.5 rounded-full">Profil</span>
+              </div>
+            )}
+            {photoUrl(p.fotoEvent) && (
+              <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-gray-100 cursor-pointer hover:ring-2 hover:ring-emerald-300 transition-all"
+                onClick={() => setViewPhoto(photoUrl(p.fotoEvent)!)}>
+                <img src={photoUrl(p.fotoEvent)!} alt="Foto Event" className="h-full w-full object-cover" />
+                <span className="absolute bottom-1.5 left-1.5 text-emerald-300 text-[9px] font-bold bg-black/50 px-2 py-0.5 rounded-full">Event</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Body */}
       <div className="p-4 space-y-4 text-sm">
