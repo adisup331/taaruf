@@ -12,7 +12,7 @@ export async function createStaff(_prev: ActionResult, formData: FormData): Prom
   const email = (formData.get("email") as string)?.trim();
   const password = (formData.get("password") as string)?.trim();
   const name = (formData.get("name") as string)?.trim();
-  const role = formData.get("role") as "ADMIN" | "PHOTOGRAPHER";
+  const role = formData.get("role") as "ADMIN" | "PHOTOGRAPHER" | "PERANTARA";
   const jenisKelamin = formData.get("jenisKelamin") as string;
   const nomorHp = (formData.get("nomorHp") as string)?.trim();
 
@@ -90,9 +90,13 @@ export async function deleteStaff(userId: string): Promise<ActionResult> {
 
 export async function updateStaffRole(userId: string, role: string): Promise<ActionResult> {
   const supabase = createClient();
+  const admin = createAdminClient();
   const { error } = await supabase.from("User").update({ role }).eq("id", userId);
 
   if (error) return { ok: false, message: `Gagal update role: ${error.message}` };
+
+  // Update auth metadata so middleware can read it
+  await admin.auth.admin.updateUserById(userId, { user_metadata: { role } });
 
   revalidatePath("/admin/staff");
   return { ok: true, message: "Role staff diperbarui." };

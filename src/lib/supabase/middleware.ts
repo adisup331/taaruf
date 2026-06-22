@@ -47,6 +47,7 @@ export async function updateSession(request: NextRequest) {
   const isTaarufPath = pathname.startsWith('/taaruf')
   const isProfilPath = pathname.startsWith('/profil')
   const isPhotoPath = pathname.startsWith('/admin/events/photography')
+  const isPerantaraPath = pathname.startsWith('/admin/perantara')
   const isMemberArea = pathname.startsWith('/e/') || pathname.startsWith('/register-profile')
 
   if (!user) {
@@ -81,19 +82,22 @@ export async function updateSession(request: NextRequest) {
 
   if (!role && !needsRoleCheck) return response
 
-  const isStaff = role === 'ADMIN' || role === 'PHOTOGRAPHER'
+  const isStaff = role === 'ADMIN' || role === 'PHOTOGRAPHER' || role === 'PERANTARA'
 
   if (isAdminPath) {
     if (role === 'PHOTOGRAPHER' && !isPhotoPath) {
       return NextResponse.redirect(new URL('/admin/events/photography', request.url))
     }
-    if (role !== 'ADMIN' && role !== 'PHOTOGRAPHER') {
+    if (role === 'PERANTARA' && !isPerantaraPath) {
+      return NextResponse.redirect(new URL('/admin/perantara', request.url))
+    }
+    if (role !== 'ADMIN' && role !== 'PHOTOGRAPHER' && role !== 'PERANTARA') {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
   }
 
   if (isStaff && (isDashboardPath || isMemberArea)) {
-    const target = role === 'PHOTOGRAPHER' ? '/admin/events/photography' : '/admin/dashboard'
+    const target = role === 'PHOTOGRAPHER' ? '/admin/events/photography' : role === 'PERANTARA' ? '/admin/perantara' : '/admin/dashboard'
     return NextResponse.redirect(new URL(target, request.url))
   }
 

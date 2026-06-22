@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation"
 import { Command } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { navGroups } from "./nav-items"
+import { getNavGroupsForRole } from "./nav-items"
 import { useSidebar } from "./sidebar-context"
 import {
   Tooltip,
@@ -15,8 +15,9 @@ import {
 } from "@/components/ui/tooltip"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 
-function NavContent({ collapsed }: { collapsed: boolean }) {
+function NavContent({ collapsed, role }: { collapsed: boolean; role: string }) {
   const pathname = usePathname()
+  const groups = getNavGroupsForRole(role)
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -33,14 +34,14 @@ function NavContent({ collapsed }: { collapsed: boolean }) {
           {!collapsed && (
             <div className="flex flex-col leading-none">
               <span className="text-sm font-semibold">Taaruf Syar'i</span>
-              <span className="text-xs text-muted-foreground">Admin Panel</span>
+              <span className="text-xs text-muted-foreground">{role === "PERANTARA" ? "Perantara" : "Admin Panel"}</span>
             </div>
           )}
         </div>
       </div>
 
       <nav className="flex-1 space-y-4 overflow-y-auto p-2">
-        {navGroups.map((group) => (
+        {groups.map((group) => (
           <div key={group.label}>
             {!collapsed && (
               <p className="px-3 pb-1 pt-2 text-xs font-medium text-muted-foreground">
@@ -52,6 +53,7 @@ function NavContent({ collapsed }: { collapsed: boolean }) {
                 const isActive =
                   pathname === item.href ||
                   (item.href !== "/admin/dashboard" &&
+                    item.href !== "/admin/perantara" &&
                     pathname.startsWith(item.href))
                 const link = (
                   <Link
@@ -91,7 +93,7 @@ function NavContent({ collapsed }: { collapsed: boolean }) {
   )
 }
 
-export function Sidebar() {
+export function Sidebar({ role }: { role: string }) {
   const { collapsed, mobileOpen, setMobileOpen } = useSidebar()
 
   return (
@@ -103,13 +105,13 @@ export function Sidebar() {
           collapsed ? "w-16" : "w-64"
         )}
       >
-        <NavContent collapsed={collapsed} />
+        <NavContent collapsed={collapsed} role={role} />
       </aside>
 
       {/* Mobile */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-64 bg-sidebar p-0">
-          <NavContent collapsed={false} />
+          <NavContent collapsed={false} role={role} />
         </SheetContent>
       </Sheet>
     </>

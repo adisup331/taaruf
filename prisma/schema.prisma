@@ -11,6 +11,7 @@ enum Role {
   MEMBER
   ADMIN
   PHOTOGRAPHER
+  PERANTARA
 }
 
 enum Gender {

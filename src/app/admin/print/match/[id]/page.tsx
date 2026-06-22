@@ -57,7 +57,7 @@ export default async function PrintMatchPage({ params }: { params: { id: string 
       <div className="mt-8 border-2 border-black rounded-xl p-5">
         <h3 className="text-center text-lg font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-4">Hasil Keputusan Taaruf</h3>
         <div className="flex justify-around items-center">
-          {["Lanjut", "Lamaran (SL)", "Tidak Lanjut", "Diserahkan Pengurus Daerah"].map(label => (
+          {["Lanjut", "Lamaran (SL)", "Tidak Lanjut"].map(label => (
             <div key={label} className="flex items-center gap-3">
               <div className="h-8 w-8 border-4 border-black rounded" />
               <span className="text-lg font-bold">{label}</span>
@@ -90,8 +90,8 @@ function BiodataSection({ label, profile: p, noPeserta, gender }: any) {
       {/* Foto + Nama */}
       <div className="flex gap-4 mb-4">
         <div className="h-28 w-24 shrink-0 border-2 border-black rounded-md overflow-hidden bg-gray-50 flex items-center justify-center shadow-sm">
-          {photoUrl(p.fotoProfil) ? (
-            <img src={photoUrl(p.fotoProfil)!} alt={p.namaLengkap} className="h-full w-full object-cover" />
+          {(photoUrl(p.fotoProfil) || photoUrl(p.fotoEvent)) ? (
+            <img src={(photoUrl(p.fotoProfil) || photoUrl(p.fotoEvent))!} alt={p.namaLengkap} className="h-full w-full object-cover" />
           ) : (
             <span className="text-[9px] text-gray-400 font-bold text-center px-1">Pas Foto</span>
           )}

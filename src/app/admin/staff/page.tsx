@@ -3,12 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, UserPlus, Shield, Camera } from "lucide-react";
+import { Search, UserPlus, Shield, Camera, Handshake } from "lucide-react";
 import { genderLabel } from "@/lib/utils";
 import { ActionForm } from "@/components/admin-panel/action-form";
 import { SubmitButton } from "@/components/admin-panel/submit-button";
 import { DeleteConfirmButton } from "@/components/admin-panel/delete-confirm-button";
 import { createStaff, deleteStaff, updateStaffRole } from "./actions";
+import { RoleChangeForm } from "./role-change-form";
 
 export default async function AdminStaffPage({
   searchParams,
@@ -24,7 +25,7 @@ export default async function AdminStaffPage({
       id, email, name, role,
       Profile ( id, nomorHp, jenisKelamin )
     `)
-    .in("role", ["ADMIN", "PHOTOGRAPHER"])
+    .in("role", ["ADMIN", "PHOTOGRAPHER", "PERANTARA"])
     .order("name", { ascending: true });
 
   if (q) query = query.ilike("name", `%${q}%`);
@@ -41,7 +42,7 @@ export default async function AdminStaffPage({
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Manajemen Staff</h2>
-          <p className="text-muted-foreground">Kelola akun Admin dan Fotografer lapangan.</p>
+          <p className="text-muted-foreground">Kelola akun Admin, Fotografer, dan Perantara.</p>
         </div>
         <form className="relative w-full md:w-72">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -84,6 +85,7 @@ export default async function AdminStaffPage({
               <select name="role" required className="h-10 w-full rounded-md border bg-background px-3 text-sm">
                 <option value="ADMIN">Admin</option>
                 <option value="PHOTOGRAPHER">Fotografer</option>
+                <option value="PERANTARA">Perantara</option>
               </select>
             </div>
             <div className="flex items-end sm:col-span-2">
@@ -115,6 +117,8 @@ export default async function AdminStaffPage({
                   </div>
                   {s.role === "ADMIN" ? (
                     <Badge variant="default" className="bg-blue-600"><Shield className="mr-1 h-3 w-3" /> Admin</Badge>
+                  ) : s.role === "PERANTARA" ? (
+                    <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-200"><Handshake className="mr-1 h-3 w-3" /> Perantara</Badge>
                   ) : (
                     <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200"><Camera className="mr-1 h-3 w-3" /> Foto</Badge>
                   )}
@@ -122,9 +126,7 @@ export default async function AdminStaffPage({
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">{genderLabel(s.profile?.jenisKelamin)} &middot; {s.profile?.nomorHp || "-"}</span>
                   <div className="flex gap-1">
-                    <ActionForm action={updateStaffRole.bind(null, s.id, s.role === "ADMIN" ? "PHOTOGRAPHER" : "ADMIN")}>
-                      <SubmitButton size="sm" variant="outline" pendingText="..." className="text-xs h-8">{s.role === "ADMIN" ? "→ Foto" : "→ Admin"}</SubmitButton>
-                    </ActionForm>
+                    <RoleChangeForm staffId={s.id} currentRole={s.role} updateStaffRole={updateStaffRole} mobile />
                     <DeleteConfirmButton title="Hapus?" description={`Hapus ${s.name}?`} action={deleteStaff.bind(null, s.id)} />
                   </div>
                 </div>
@@ -157,6 +159,8 @@ export default async function AdminStaffPage({
                     <td className="px-6 py-3">
                       {s.role === "ADMIN" ? (
                         <Badge variant="default" className="bg-blue-600"><Shield className="mr-1 h-3 w-3" /> Admin</Badge>
+                      ) : s.role === "PERANTARA" ? (
+                        <Badge variant="secondary" className="bg-purple-100 text-purple-800 border-purple-200"><Handshake className="mr-1 h-3 w-3" /> Perantara</Badge>
                       ) : (
                         <Badge variant="secondary" className="bg-amber-100 text-amber-800 border-amber-200"><Camera className="mr-1 h-3 w-3" /> Fotografer</Badge>
                       )}
@@ -165,9 +169,7 @@ export default async function AdminStaffPage({
                     <td className="px-6 py-3 text-muted-foreground font-mono">{s.profile?.nomorHp || "-"}</td>
                     <td className="px-6 py-3 text-right">
                       <div className="flex justify-end gap-2">
-                        <ActionForm action={updateStaffRole.bind(null, s.id, s.role === "ADMIN" ? "PHOTOGRAPHER" : "ADMIN")}>
-                          <SubmitButton size="sm" variant="outline" pendingText="...">Ubah ke {s.role === "ADMIN" ? "Fotografer" : "Admin"}</SubmitButton>
-                        </ActionForm>
+                        <RoleChangeForm staffId={s.id} currentRole={s.role} updateStaffRole={updateStaffRole} />
                         <DeleteConfirmButton title="Hapus Staff?" description={`Akun ${s.name} akan dihapus permanen.`} action={deleteStaff.bind(null, s.id)} />
                       </div>
                     </td>

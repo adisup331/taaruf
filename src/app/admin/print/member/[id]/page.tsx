@@ -22,8 +22,8 @@ export default async function PrintMemberPage({ params }: { params: { id: string
       {/* Header */}
       <div className="mb-6 border-b-4 border-emerald-600 pb-4 flex items-center gap-6">
         <div className="h-24 w-24 shrink-0 rounded-full border-2 border-emerald-200 overflow-hidden bg-gray-50 shadow">
-          {photoUrl(profile.fotoProfil) ? (
-            <img src={photoUrl(profile.fotoProfil)!} alt={profile.namaLengkap} className="h-full w-full object-cover" />
+          {(photoUrl(profile.fotoProfil) || photoUrl(profile.fotoEvent)) ? (
+            <img src={(photoUrl(profile.fotoProfil) || photoUrl(profile.fotoEvent))!} alt={profile.namaLengkap} className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full items-center justify-center text-emerald-200 text-3xl font-black">?</div>
           )}

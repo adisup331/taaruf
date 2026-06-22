@@ -20,7 +20,7 @@ function ShellInner({
   return (
     <div className="min-h-screen bg-background">
       <TaarufRealtime />
-      <Sidebar />
+      <Sidebar role={role} />
       <div
         className={cn(
           "flex min-h-screen flex-col transition-[padding] duration-300",
