@@ -175,7 +175,7 @@ function TaarufItem({ item, isBlur, viewerName }: { item: any; isBlur: boolean; 
     <div className="flex items-center gap-4 rounded-3xl border border-gray-100 bg-white p-4 shadow-sm active:scale-[0.98] transition-transform">
       <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-[1.25rem] bg-gray-50 border border-gray-50 screenshot-guard">
         <Image
-          src={photoUrl(lawan?.fotoProfil) || "/placeholder-user.jpg"}
+          src={photoUrl(lawan?.fotoProfil) || photoUrl(lawan?.fotoEvent) || "/placeholder-user.jpg"}
           alt={lawan?.namaLengkap || "Foto"}
           fill
           unoptimized

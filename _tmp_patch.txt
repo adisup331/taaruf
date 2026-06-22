@@ -1,0 +1,9 @@
+﻿*** Begin Patch
+*** Update File: prisma/schema.prisma
+@@ enum Role {
+   MEMBER
+   ADMIN
+   PHOTOGRAPHER
++  PERANTARA
+ }
+*** End Patch

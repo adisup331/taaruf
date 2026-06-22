@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { toast } from "sonner"
-import { Plus, Trash2, Pencil, Check, X, Loader2, Search } from "lucide-react"
+import { Plus, Trash2, Pencil, Check, X, Loader2, Search, Phone } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,6 +12,7 @@ interface Item {
   id: string
   nama: string
   parentId?: string
+  contactWhatsapp?: string | null
 }
 
 interface ParentItem {
@@ -25,9 +26,11 @@ interface MasterDataSectionProps {
   items: Item[]
   parents?: ParentItem[]
   parentLabel?: string
+  contactField?: boolean
   createAction: (nama: string, parentId?: string) => Promise<ActionResult>
   updateAction: (id: string, nama: string) => Promise<ActionResult>
   deleteAction: (id: string) => Promise<ActionResult>
+  updateContact?: (id: string, wa: string) => Promise<ActionResult>
 }
 
 export function MasterDataSection({
@@ -36,14 +39,18 @@ export function MasterDataSection({
   items,
   parents,
   parentLabel,
+  contactField,
   createAction,
   updateAction,
   deleteAction,
+  updateContact,
 }: MasterDataSectionProps) {
   const [nama, setNama] = React.useState("")
   const [selectedParentId, setSelectedParentId] = React.useState("")
   const [editingId, setEditingId] = React.useState<string | null>(null)
   const [editValue, setEditValue] = React.useState("")
+  const [editingContactId, setEditingContactId] = React.useState<string | null>(null)
+  const [contactValue, setContactValue] = React.useState("")
   const [search, setSearch] = React.useState("")
   const [pending, startTransition] = React.useTransition()
 
@@ -153,6 +160,43 @@ export function MasterDataSection({
                               <span className="ml-2 text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
                                 {parentName}
                               </span>
+                            )}
+                            {contactField && editingContactId !== item.id && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <Phone className="h-3 w-3 text-emerald-500" />
+                                <span className="text-xs text-muted-foreground">
+                                  {item.contactWhatsapp || <span className="italic text-gray-400">belum ada</span>}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => { setEditingContactId(item.id); setContactValue(item.contactWhatsapp || ""); }}
+                                  className="ml-1 text-muted-foreground hover:text-emerald-600"
+                                >
+                                  <Pencil className="h-3 w-3" />
+                                </button>
+                              </div>
+                            )}
+                            {contactField && editingContactId === item.id && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <Phone className="h-3 w-3 text-emerald-500 flex-shrink-0" />
+                                <Input
+                                  value={contactValue}
+                                  onChange={(e) => setContactValue(e.target.value)}
+                                  placeholder="08123456789"
+                                  className="h-7 text-xs flex-1"
+                                  autoFocus
+                                />
+                                <Button
+                                  size="icon" variant="ghost" className="h-7 w-7"
+                                  disabled={pending}
+                                  onClick={() => updateContact && fire(updateContact(item.id, contactValue), () => setEditingContactId(null))}
+                                >
+                                  <Check className="h-3 w-3 text-green-600" />
+                                </Button>
+                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setEditingContactId(null)}>
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
                             )}
                           </div>
                         )}

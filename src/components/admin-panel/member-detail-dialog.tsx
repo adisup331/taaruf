@@ -20,7 +20,7 @@ export function MemberDetailDialog({ profile }: MemberDetailDialogProps) {
   const [detailOpen, setDetailOpen] = useState(false)
   const [viewPhoto, setViewPhoto] = useState<string | null>(null)
 
-  const imageUrl = photoUrl(profile.fotoProfil)
+  const imageUrl = photoUrl(profile.fotoProfil) || photoUrl(profile.fotoEvent)
   const eventImageUrl = photoUrl(profile.fotoEvent)
 
   return (

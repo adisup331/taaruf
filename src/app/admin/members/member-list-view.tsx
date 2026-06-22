@@ -115,8 +115,8 @@ export function MemberListView({ profiles, daerahList, desaList, kelompokList, a
               {profiles.map((p) => (
                 <div key={p.id} className="rounded-xl border bg-card overflow-hidden hover:shadow-md transition-shadow">
                   <div className="aspect-[4/3] relative bg-muted overflow-hidden">
-                    {photoUrl(p.fotoProfil) ? (
-                      <img src={photoUrl(p.fotoProfil)!} className="h-full w-full object-cover" alt="" />
+                    {(photoUrl(p.fotoProfil) || photoUrl(p.fotoEvent)) ? (
+                      <img src={(photoUrl(p.fotoProfil) || photoUrl(p.fotoEvent))!} className="h-full w-full object-cover" alt="" />
                     ) : (
                       <div className="flex h-full items-center justify-center text-muted-foreground text-4xl font-bold opacity-10">
                         {p.namaLengkap?.charAt(0)}

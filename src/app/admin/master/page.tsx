@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { MasterDataSection } from "@/components/admin-panel/master-data-section"
-import { createMaster, updateMaster, deleteMaster } from "./actions"
+import { createMaster, updateMaster, deleteMaster, updateDaerahContact } from "./actions"
 
 export default async function MasterPage() {
   const supabase = createClient()
@@ -11,7 +11,7 @@ export default async function MasterPage() {
     { data: desa },
     { data: kelompok }
   ] = await Promise.all([
-    supabase.from("Daerah").select("id, nama").order("nama"),
+    supabase.from("Daerah").select("id, nama, contactWhatsapp").order("nama"),
     supabase.from("Desa").select("id, nama, daerahId").order("nama"),
     supabase.from("Kelompok").select("id, nama, desaId").order("nama")
   ])
@@ -44,9 +44,11 @@ export default async function MasterPage() {
           title="Daerah"
           description="Level 1: Kota / Kabupaten"
           items={daerah || []}
+          contactField
           createAction={async (nama) => { "use server"; return createMaster("Daerah", nama); }}
           updateAction={async (id, nama) => { "use server"; return updateMaster("Daerah", id, nama); }}
           deleteAction={async (id) => { "use server"; return deleteMaster("Daerah", id); }}
+          updateContact={async (id, wa) => { "use server"; return updateDaerahContact(id, wa); }}
         />
 
         {/* KOLOM 2: DESA */}

@@ -66,8 +66,8 @@ export function AttendeeTable({ attendees, checkedInCount, actions }: AttendeeTa
             {/* Row 1: Avatar + Nama + No Peserta */}
             <div className="flex items-center gap-3">
               <Avatar className="h-12 w-12 border shadow-sm">
-                {photoUrl(a.profile?.fotoProfil) ? (
-                  <AvatarImage src={photoUrl(a.profile.fotoProfil)!} alt={a.profile.namaLengkap} className="object-cover" />
+                {(photoUrl(a.profile?.fotoProfil) || photoUrl(a.profile?.fotoEvent)) ? (
+                  <AvatarImage src={(photoUrl(a.profile.fotoProfil) || photoUrl(a.profile.fotoEvent))!} alt={a.profile.namaLengkap} className="object-cover" />
                 ) : (
                   <AvatarFallback className="bg-muted">
                     <Camera className="h-4 w-4 text-muted-foreground opacity-30" />
@@ -172,8 +172,8 @@ export function AttendeeTable({ attendees, checkedInCount, actions }: AttendeeTa
                   <Dialog>
                     <DialogTrigger asChild>
                       <Avatar className="h-10 w-10 border shadow-sm cursor-pointer hover:ring-2 hover:ring-emerald-300 transition-all">
-                        {photoUrl(a.profile?.fotoProfil) ? (
-                          <AvatarImage src={photoUrl(a.profile.fotoProfil)!} alt={a.profile.namaLengkap} className="object-cover" />
+                        {(photoUrl(a.profile?.fotoProfil) || photoUrl(a.profile?.fotoEvent)) ? (
+                          <AvatarImage src={(photoUrl(a.profile.fotoProfil) || photoUrl(a.profile.fotoEvent))!} alt={a.profile.namaLengkap} className="object-cover" />
                         ) : (
                           <AvatarFallback className="bg-muted">
                             <Camera className="h-4 w-4 text-muted-foreground opacity-30" />
@@ -184,7 +184,7 @@ export function AttendeeTable({ attendees, checkedInCount, actions }: AttendeeTa
                     {photoUrl(a.profile?.fotoProfil) && (
                       <DialogContent className="max-w-lg p-2 bg-black border-none rounded-2xl">
                         <div className="relative w-full aspect-[3/4] rounded-xl overflow-hidden">
-                          <Image src={photoUrl(a.profile.fotoProfil)!} fill className="object-contain" alt={a.profile.namaLengkap} unoptimized />
+                          <Image src={(photoUrl(a.profile.fotoProfil) || photoUrl(a.profile.fotoEvent))!} fill className="object-contain" alt={a.profile.namaLengkap} unoptimized />
                         </div>
                         <p className="text-center text-white text-sm font-bold py-2">{a.profile.namaLengkap} — No. {a.participantNumber}</p>
                       </DialogContent>

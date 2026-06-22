@@ -46,3 +46,17 @@ export async function deleteMaster(table: Table, id: string): Promise<ActionResu
   revalidatePath("/admin/master")
   return { ok: true, message: "Data dihapus." }
 }
+
+
+export async function updateDaerahContact(id: string, contactWhatsapp: string): Promise<ActionResult> {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from("Daerah")
+    .update({ contactWhatsapp: contactWhatsapp.trim() || null })
+    .eq("id", id)
+
+  if (error) return { ok: false, message: `Gagal: ${error.message}` }
+
+  revalidatePath("/admin/master")
+  return { ok: true, message: "Kontak WhatsApp diperbarui." }
+}
