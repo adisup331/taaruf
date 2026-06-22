@@ -12,8 +12,9 @@ import { DeleteConfirmButton } from "@/components/admin-panel/delete-confirm-but
 
 const TABS = [
   { key: "active", label: "Aktif", statuses: ["PENDING", "APPROVED"] },
-  { key: "lanjut", label: "Lanjut / SL", statuses: ["LANJUT", "SL", "DISERAHKAN_PENGURUS"] },
+  { key: "lanjut", label: "Lanjut / SL", statuses: ["LANJUT", "SL"] },
   { key: "tidak", label: "Tidak Lanjut", statuses: ["TIDAK_LANJUT"] },
+  { key: "pengurus", label: "Diserahkan Pengurus", statuses: ["DISERAHKAN_PENGURUS"] },
   { key: "all", label: "Semua", statuses: [] },
 ];
 
@@ -46,8 +47,9 @@ export function MatchDesk({
 
   const counts: Record<string, number> = {
     active: requests.filter(r => ["PENDING", "APPROVED"].includes(r.status)).length,
-    lanjut: requests.filter(r => ["LANJUT", "SL", "DISERAHKAN_PENGURUS"].includes(r.status)).length,
+    lanjut: requests.filter(r => ["LANJUT", "SL"].includes(r.status)).length,
     tidak: requests.filter(r => r.status === "TIDAK_LANJUT").length,
+    pengurus: requests.filter(r => r.status === "DISERAHKAN_PENGURUS").length,
     all: requests.length,
   };
 
