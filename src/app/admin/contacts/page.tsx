@@ -9,7 +9,7 @@ export default async function ContactsPage() {
   const [{ data: daerahList }, { data: profiles }] = await Promise.all([
     supabase
       .from("Daerah")
-      .select("id, nama, contactName, contactWhatsapp")
+      .select("*")
       .order("nama"),
     supabase
       .from("Profile")
@@ -32,10 +32,12 @@ export default async function ContactsPage() {
     const supabase = createClient();
     const contactName = (formData.get("contactName") as string)?.trim() || null;
     const contactWhatsapp = (formData.get("contactWhatsapp") as string)?.trim() || null;
+    const contactName2 = (formData.get("contactName2") as string)?.trim() || null;
+    const contactWhatsapp2 = (formData.get("contactWhatsapp2") as string)?.trim() || null;
 
     const { error } = await supabase
       .from("Daerah")
-      .update({ contactName, contactWhatsapp })
+      .update({ contactName, contactWhatsapp, contactName2, contactWhatsapp2 })
       .eq("id", id);
 
     if (error) return { ok: false, message: `Gagal: ${error.message}` };
@@ -49,7 +51,7 @@ export default async function ContactsPage() {
       <div>
         <h2 className="text-2xl font-bold tracking-tight">Kontak Tim Daerah</h2>
         <p className="text-muted-foreground text-sm">
-          Kelola nama PIC dan nomor WhatsApp per daerah sambung.
+          Kelola nama PIC dan nomor WhatsApp per daerah sambung (maks. 2 kontak).
         </p>
       </div>
       <ContactList daerahList={daerahList || []} memberCounts={memberCounts} updateContact={updateContact} />

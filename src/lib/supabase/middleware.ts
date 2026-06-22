@@ -35,7 +35,9 @@ export async function updateSession(request: NextRequest) {
     pathname === '/login' ||
     pathname.startsWith('/register') ||
     pathname.startsWith('/auth/') ||
-    pathname.startsWith('/api/')
+    pathname.startsWith('/api/') ||
+    pathname.startsWith('/bio/') ||
+    pathname.startsWith('/b/')
 
   // getUser() WAJIB dipanggil untuk refresh token — tapi hanya sekali
   const { data: { user } } = await supabase.auth.getUser()

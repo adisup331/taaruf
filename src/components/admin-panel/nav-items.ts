@@ -10,6 +10,7 @@ import {
   Layers,
   PhoneCall,
   Eye,
+  Settings,
   type LucideIcon,
 } from "lucide-react"
 
@@ -57,6 +58,13 @@ export const navGroups: NavGroup[] = [
     items: [
       { title: "Studio Foto", icon: Camera, href: "/admin/events/photography" },
       { title: "Manajemen Staff", icon: Users, href: "/admin/staff" },
+    ],
+  },
+  {
+    label: "Sistem",
+    roles: ["ADMIN"],
+    items: [
+      { title: "Pengaturan", icon: Settings, href: "/admin/settings" },
     ],
   },
   {

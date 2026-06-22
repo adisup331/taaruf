@@ -9,6 +9,7 @@ import { SubmitButton } from "@/components/admin-panel/submit-button";
 import { MatchSearch } from "@/components/admin-panel/match-search";
 import { type ActionResult } from "@/lib/action-result";
 import { MatchDesk } from "./match-desk";
+import { DEFAULT_TEMPLATE } from "@/lib/constants";
 
 export default async function LiveMatchingPage({
   searchParams,
@@ -36,29 +37,39 @@ export default async function LiveMatchingPage({
   // ⚡ TaarufRequest + EventAttendees PARALEL
   let requestsRaw: any[] = [];
   let attendeeData: any[] = [];
+  let messageTemplate = DEFAULT_TEMPLATE;
+  let daerahContacts: Record<string, { contactName: string | null; contactWhatsapp: string | null; contactName2: string | null; contactWhatsapp2: string | null }> = {};
 
   if (selectedEventId) {
     let rq = supabase
       .from("TaarufRequest")
       .select(`
         id, status, tableNumber, senderId, receiverId,
-        sender:User!TaarufRequest_senderId_fkey ( Profile ( namaLengkap, asalKelompok, daerahSambung ) ),
-        receiver:User!TaarufRequest_receiverId_fkey ( Profile ( namaLengkap, asalKelompok, daerahSambung ) )
+        sender:User!TaarufRequest_senderId_fkey ( Profile ( namaLengkap, asalKelompok, daerahSambung, nomorHp ) ),
+        receiver:User!TaarufRequest_receiverId_fkey ( Profile ( namaLengkap, asalKelompok, daerahSambung, nomorHp ) )
       `)
       .eq("eventId", selectedEventId)
       .order("id", { ascending: false });
 
     if (query) rq = rq.ilike("id", `%${query}%`);
 
-    const [rqRes, attRes] = await Promise.all([
+    const [rqRes, attRes, daerahRes] = await Promise.all([
       rq,
       supabase
         .from("EventAttendee")
         .select("userId, participantNumber")
         .eq("eventId", selectedEventId),
+      supabase
+        .from("Daerah")
+        .select("*"),
     ]);
     requestsRaw = rqRes.data || [];
     attendeeData = attRes.data || [];
+    (daerahRes.data || []).forEach((d: any) => {
+      if (d.nama) daerahContacts[d.nama] = { contactName: d.contactName, contactWhatsapp: d.contactWhatsapp, contactName2: d.contactName2, contactWhatsapp2: d.contactWhatsapp2 };
+    });
+    const { data: tmplSetting } = await supabase.from("AppSetting").select("value").eq("key", "followup_message_template").maybeSingle();
+    if (tmplSetting?.value) messageTemplate = tmplSetting.value;
   }
 
   const requests = requestsRaw.map((req: any) => {
@@ -280,6 +291,9 @@ export default async function LiveMatchingPage({
         participantMap={participantMap}
         availableTables={availableTables}
         selectedEventId={selectedEventId}
+        daerahContacts={daerahContacts}
+        eventTitle={selectedEvent?.title || ""}
+        messageTemplate={messageTemplate}
         updateRequest={updateRequest}
         deleteRequest={deleteRequest}
       />
