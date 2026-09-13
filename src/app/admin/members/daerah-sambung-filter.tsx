@@ -4,13 +4,11 @@ import { useState, useRef, useEffect, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, X, Loader2 } from "lucide-react";
 
-export function DaerahFilter({ daerahList }: { daerahList: { nama: string }[] }) {
+export function DaerahSambungFilter({ daerahList }: { daerahList: { nama: string }[] }) {
   const router = useRouter();
   const params = useSearchParams();
   const [isPending, startTransition] = useTransition();
-  const asalDaerah = params.get("asalDaerah") || "";
-  const q = params.get("q") || "";
-  const jenisKelamin = params.get("jenisKelamin") || "";
+  const daerahSambung = params.get("daerahSambung") || "";
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const ref = useRef<HTMLDivElement>(null);
@@ -34,9 +32,9 @@ export function DaerahFilter({ daerahList }: { daerahList: { nama: string }[] })
     startTransition(() => {
       const query = new URLSearchParams(params.toString());
       if (val) {
-        query.set("asalDaerah", val);
+        query.set("daerahSambung", val);
       } else {
-        query.delete("asalDaerah");
+        query.delete("daerahSambung");
       }
       router.push(`?${query.toString()}`);
     });
@@ -49,17 +47,17 @@ export function DaerahFilter({ daerahList }: { daerahList: { nama: string }[] })
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex h-9 items-center gap-2 rounded-md border border-input bg-background px-3 py-1 text-sm text-left hover:border-emerald-200 focus:outline-none"
+        className="flex h-9 items-center gap-2 rounded-md border border-input bg-background px-3 py-1 text-sm text-left hover:border-purple-200 focus:outline-none"
       >
-        {asalDaerah ? (
+        {daerahSambung ? (
           <span className="font-medium text-foreground truncate max-w-[120px]">
-            {asalDaerah}
+            {daerahSambung}
           </span>
         ) : (
-          <span className="text-muted-foreground">Semua Daerah</span>
+          <span className="text-muted-foreground">Daerah Sambung</span>
         )}
         {isPending ? (
-          <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />
+          <Loader2 className="h-4 w-4 animate-spin text-purple-600" />
         ) : (
           <svg
             className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
@@ -82,7 +80,7 @@ export function DaerahFilter({ daerahList }: { daerahList: { nama: string }[] })
               autoFocus
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cari daerah..."
+              placeholder="Cari daerah sambung..."
               className="flex-1 bg-transparent outline-none text-sm"
             />
           </div>
@@ -93,7 +91,7 @@ export function DaerahFilter({ daerahList }: { daerahList: { nama: string }[] })
               className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-left"
             >
               <X className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className={!asalDaerah ? "font-bold" : ""}>Semua Daerah</span>
+              <span className={!daerahSambung ? "font-bold" : ""}>Semua</span>
             </button>
             {filtered.map((d) => (
               <button
@@ -102,7 +100,7 @@ export function DaerahFilter({ daerahList }: { daerahList: { nama: string }[] })
                 onClick={() => navigate(d.nama)}
                 className="flex w-full items-center px-3 py-2 text-sm hover:bg-muted text-left"
               >
-                <span className={asalDaerah === d.nama ? "font-bold text-emerald-600" : ""}>
+                <span className={daerahSambung === d.nama ? "font-bold text-purple-600" : ""}>
                   {d.nama}
                 </span>
               </button>
@@ -113,4 +111,3 @@ export function DaerahFilter({ daerahList }: { daerahList: { nama: string }[] })
     </div>
   );
 }
-

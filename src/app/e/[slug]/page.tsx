@@ -8,7 +8,7 @@ import Link from "next/link";
 import { ActionForm } from "@/components/admin-panel/action-form";
 import { SubmitButton } from "@/components/admin-panel/submit-button";
 import { type ActionResult } from "@/lib/action-result";
-import { nextParticipantNumber } from "@/lib/participant";
+import { joinEventVerified } from "@/lib/participant";
 import { EventJoinClient } from "./event-join-client";
 
 export default async function EventJoinPage({ params }: { params: { slug: string } }) {
@@ -84,14 +84,19 @@ export default async function EventJoinPage({ params }: { params: { slug: string
     .eq("userId", dbUser!.id)
     .maybeSingle();
 
-  const alreadyIn = myAttendee?.isVerified === true;
-
   // Check if user already has a complete profile
   const { data: myProfile } = await supabase
     .from("Profile")
     .select("id, namaLengkap, fotoProfil, jenisKelamin, tanggalLahir, asalDaerah")
     .eq("userId", dbUser!.id)
     .maybeSingle();
+
+  const profileComplete = !!(myProfile
+    && myProfile.namaLengkap && myProfile.namaLengkap !== "-"
+    && myProfile.asalDaerah && myProfile.asalDaerah !== "-"
+    && myProfile.tanggalLahir);
+
+  const alreadyIn = myAttendee?.isVerified === true;
 
   // Master data for cascading selects
   const [{ data: daerahList }, { data: desaList }, { data: kelompokList }] = await Promise.all([
@@ -100,10 +105,24 @@ export default async function EventJoinPage({ params }: { params: { slug: string
     supabase.from("Kelompok").select("id, nama, desaId").order("nama"),
   ]);
 
-  const hasCompleteProfile = myProfile
-    && myProfile.namaLengkap && myProfile.namaLengkap !== "-"
-    && myProfile.asalDaerah && myProfile.asalDaerah !== "-"
-    && myProfile.tanggalLahir;
+  const hasCompleteProfile = profileComplete;
+
+  // --- Server Action: konfirmasi ikut event (profil sudah lengkap, tanpa isi biodata lagi) ---
+  async function confirmJoin(_prev: ActionResult, _formData: FormData): Promise<ActionResult> {
+    "use server";
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok: false, message: "Sesi habis. Silakan login lagi." };
+
+    const { data: me } = await supabase.from("User").select("id").eq("email", user.email).single();
+    if (!me) return { ok: false, message: "Akun tidak ditemukan." };
+
+    const joined = await joinEventVerified(supabase, event.id, me.id);
+    if (joined.error) return { ok: false, message: `Gagal masuk event: ${joined.error}` };
+
+    revalidatePath(`/e/${params.slug}`);
+    return { ok: true, message: `Berhasil masuk event! Nomor peserta kamu ${joined.participantNumber}.` };
+  }
 
   // --- Server Action: klaim nomor peserta ---
   async function claimNumber(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
@@ -215,23 +234,8 @@ export default async function EventJoinPage({ params }: { params: { slug: string
     }
 
     // Create EventAttendee with auto-assigned number
-    const { data: alreadyAttendee } = await supabase
-      .from("EventAttendee").select("id, participantNumber, isVerified")
-      .eq("eventId", event.id).eq("userId", me.id).maybeSingle();
-
-    if (alreadyAttendee) {
-      if (!alreadyAttendee.participantNumber) {
-        const num = await nextParticipantNumber(supabase, event.id);
-        await supabase.from("EventAttendee").update({ participantNumber: num, isVerified: true }).eq("id", alreadyAttendee.id);
-      } else {
-        await supabase.from("EventAttendee").update({ isVerified: true }).eq("id", alreadyAttendee.id);
-      }
-    } else {
-      const num = await nextParticipantNumber(supabase, event.id);
-      await supabase.from("EventAttendee").insert({
-        eventId: event.id, userId: me.id, participantNumber: num, isVerified: true, isCheckedIn: false,
-      });
-    }
+    const joined = await joinEventVerified(supabase, event.id, me.id);
+    if (joined.error) return { ok: false, message: `Gagal masuk event: ${joined.error}` };
 
     revalidatePath(`/e/${params.slug}`);
     return { ok: true, message: "Berhasil terdaftar!" };
@@ -273,6 +277,8 @@ export default async function EventJoinPage({ params }: { params: { slug: string
     <EventJoinClient
       event={event}
       hasCompleteProfile={!!hasCompleteProfile}
+      profileName={myProfile?.namaLengkap || ""}
+      confirmJoin={confirmJoin}
       claimNumber={claimNumber}
       registerNew={registerNew}
       daerahList={daerahList || []}

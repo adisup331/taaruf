@@ -1,4 +1,4 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+﻿import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
@@ -29,7 +29,7 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname
 
-  // Public routes → hanya refresh session token, tidak perlu proteksi
+  // Public routes â†’ hanya refresh session token, tidak perlu proteksi
   const isPublicRoute =
     pathname === '/' ||
     pathname === '/login' ||
@@ -39,7 +39,7 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith('/bio/') ||
     pathname.startsWith('/b/')
 
-  // getUser() WAJIB dipanggil untuk refresh token — tapi hanya sekali
+  // getUser() WAJIB dipanggil untuk refresh token â€” tapi hanya sekali
   const { data: { user } } = await supabase.auth.getUser()
 
   if (isPublicRoute) return response
@@ -52,8 +52,10 @@ export async function updateSession(request: NextRequest) {
   const isPerantaraPath = pathname.startsWith('/admin/perantara')
   const isMemberArea = pathname.startsWith('/e/') || pathname.startsWith('/register-profile')
 
+  const isPengurusPath = pathname.startsWith('/pengurus')
+
   if (!user) {
-    if (isAdminPath || isDashboardPath || isTaarufPath || isProfilPath) {
+    if (isAdminPath || isDashboardPath || isTaarufPath || isProfilPath || isPengurusPath) {
       const url = request.nextUrl.clone()
       url.pathname = '/login'
       url.searchParams.set('next', pathname)
@@ -62,13 +64,13 @@ export async function updateSession(request: NextRequest) {
     return response
   }
 
-  // ⚡ OPTIMASI: baca role dari user_metadata (tidak perlu query DB)
+  // âš¡ OPTIMASI: baca role dari user_metadata (tidak perlu query DB)
   // Role disimpan ke metadata saat login di handleLogin (login/page.tsx)
   const roleFromMeta = user.user_metadata?.role as string | undefined
 
   // Jika metadata tidak punya role (akun lama / Google login),
   // fallback ke DB query HANYA saat masuk admin atau member area
-  const needsRoleCheck = isAdminPath || isDashboardPath || isMemberArea
+  const needsRoleCheck = isAdminPath || isDashboardPath || isMemberArea || isPengurusPath
 
   let role = roleFromMeta
 
@@ -98,6 +100,14 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
+  // EVENT_STAFF: hanya boleh akses /pengurus
+  if (role === 'EVENT_STAFF') {
+    if (!isPengurusPath) {
+      return NextResponse.redirect(new URL('/pengurus', request.url))
+    }
+    return response
+  }
+
   if (isStaff && (isDashboardPath || isMemberArea)) {
     const target = role === 'PHOTOGRAPHER' ? '/admin/events/photography' : role === 'PERANTARA' ? '/admin/perantara' : '/admin/dashboard'
     return NextResponse.redirect(new URL(target, request.url))
@@ -105,3 +115,6 @@ export async function updateSession(request: NextRequest) {
 
   return response
 }
+
+
+

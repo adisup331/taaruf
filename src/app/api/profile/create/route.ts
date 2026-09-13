@@ -1,5 +1,6 @@
 ﻿import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { joinEventVerified } from "@/lib/participant"
 
 export async function POST(request: Request) {
   try {
@@ -114,29 +115,13 @@ export async function POST(request: Request) {
     }
 
     // 3. Register to event if eventId provided
+    // Langsung terverifikasi + dapat nomor peserta, sama seperti daftar lewat link /e/[slug],
+    // supaya admin tidak perlu memasukkan manual lagi.
     if (eventId && eventId.trim()) {
-      // Check if already registered
-      const { data: existing } = await supabase
-        .from('EventAttendee')
-        .select('id')
-        .eq('eventId', eventId)
-        .eq('userId', userId)
-        .maybeSingle()
-
-      if (!existing) {
-        const { error: attendeeErr } = await supabase
-          .from('EventAttendee')
-          .insert({
-            eventId,
-            userId,
-            isVerified: false,
-            isCheckedIn: false
-          })
-
-        if (attendeeErr) {
-          console.error("Failed to register event attendee:", attendeeErr)
-          // Don't fail profile creation if event registration fails
-        }
+      const { error: attendeeErr } = await joinEventVerified(supabase, eventId, userId)
+      if (attendeeErr) {
+        console.error("Failed to register event attendee:", attendeeErr)
+        // Don't fail profile creation if event registration fails
       }
     }
 

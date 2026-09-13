@@ -6,14 +6,14 @@ export function GenderFilter() {
   const router = useRouter();
   const params = useSearchParams();
   const jenisKelamin = params.get('jenisKelamin') || '';
-  const q = params.get('q') || '';
-  const asalDaerah = params.get('asalDaerah') || '';
 
   const handleChange = (val: string) => {
-    const query = new URLSearchParams();
-    if (q) query.set('q', q);
-    if (asalDaerah) query.set('asalDaerah', asalDaerah);
-    if (val) query.set('jenisKelamin', val);
+    const query = new URLSearchParams(params.toString());
+    if (val) {
+      query.set('jenisKelamin', val);
+    } else {
+      query.delete('jenisKelamin');
+    }
     router.push(`?${query.toString()}`);
   };
 

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+﻿import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -17,15 +17,18 @@ import { genderLabel, photoUrl } from "@/lib/utils";
 import { nextParticipantNumber } from "@/lib/participant";
 import { AddMembersForm } from "./add-members";
 import { AttendeeTable } from "./attendee-table";
+import { EventStaffManager } from "./event-staff-manager";
+import { createEventStaff, deleteEventStaff, resetEventStaffPassword } from "./event-staff-actions";
 
 export default async function EventDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
 
-  // ⚡ Event + Attendees + All Members PARALEL
+  // âš¡ Event + Attendees + All Members PARALEL
   const [
     { data: event },
     { data: attendeesRaw },
     { data: allMembers },
+    { data: eventStaffRaw },
   ] = await Promise.all([
     supabase
       .from("Event")
@@ -43,9 +46,16 @@ export default async function EventDetailPage({ params }: { params: { id: string
       .from("Profile")
       .select("userId, namaLengkap, jenisKelamin")
       .order("namaLengkap", { ascending: true }),
+    supabase
+      .from("EventStaff")
+      .select("id, username, label, createdAt")
+      .eq("eventId", params.id)
+      .order("createdAt", { ascending: true }),
   ]);
 
   if (!event) notFound();
+
+  const eventStaff = (eventStaffRaw || []) as { id: string; username: string; label: string; createdAt: string }[];
 
   const attendees = attendeesRaw?.map((a: any) => {
     const userData = Array.isArray(a.User) ? a.User[0] : a.User;
@@ -261,6 +271,21 @@ export default async function EventDetailPage({ params }: { params: { id: string
         </Card>
       </div>
 
+      {/* Event Staff / Pengurus Management */}
+      <EventStaffManager
+        eventId={params.id}
+        staffList={eventStaff}
+        createAction={createEventStaff.bind(null, params.id)}
+        deleteAction={async (staffId: string) => {
+          "use server";
+          return deleteEventStaff(staffId, params.id);
+        }}
+        resetPasswordAction={async (staffId: string, prev: ActionResult, formData: FormData) => {
+          "use server";
+          return resetEventStaffPassword(staffId, params.id, prev, formData);
+        }}
+      />
+
       {/* Attendee management */}
       <Card>
         <CardHeader>
@@ -294,6 +319,9 @@ export default async function EventDetailPage({ params }: { params: { id: string
           />
         </CardContent>
       </Card>
+
     </div>
   );
 }
+
+

@@ -12,6 +12,7 @@ enum Role {
   ADMIN
   PHOTOGRAPHER
   PERANTARA
+  EVENT_STAFF
 }
 
 enum Gender {
@@ -36,6 +37,7 @@ model User {
   role          Role      @default(MEMBER)
   profile       Profile?
   attendees     EventAttendee[]
+  eventStaff       EventStaff[]
   sentRequests  TaarufRequest[] @relation("Sender")
   receivedRequests TaarufRequest[] @relation("Receiver")
 }
@@ -94,6 +96,7 @@ model Event {
   sessionId       String
   session         Session  @relation(fields: [sessionId], references: [id])
   attendees       EventAttendee[]
+  eventStaff       EventStaff[]
 }
 
 model EventAttendee {
@@ -125,3 +128,19 @@ model TaarufRequest {
   receiver     User          @relation("Receiver", fields: [receiverId], references: [id])
   session      Session       @relation(fields: [sessionId], references: [id])
 }
+
+
+model EventStaff {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String
+  username  String   @unique
+  label     String   @default("Pengurus")
+  createdAt DateTime @default(now())
+
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+}
+

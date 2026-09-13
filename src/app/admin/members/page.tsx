@@ -7,10 +7,11 @@ import { type ActionResult } from "@/lib/action-result";
 import { RegisterMemberForm } from "./register-form";
 import { GenderFilter } from "./gender-filter";
 import { DaerahFilter } from "./daerah-filter";
+import { DaerahSambungFilter } from "./daerah-sambung-filter";
 import { MemberListView } from "./member-list-view";
 
 interface MembersPageProps {
-  searchParams: { q?: string; jenisKelamin?: string; asalDaerah?: string };
+  searchParams: { q?: string; jenisKelamin?: string; asalDaerah?: string; daerahSambung?: string };
 }
 
 export default async function AdminMembersPage({ searchParams }: MembersPageProps) {
@@ -18,6 +19,7 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
   const q = searchParams.q || "";
   const jenisKelamin = searchParams.jenisKelamin || "";
   const asalDaerah = searchParams.asalDaerah || "";
+  const daerahSambung = searchParams.daerahSambung || "";
 
   let query = supabase.from("Profile")
     .select("id, userId, namaLengkap, jenisKelamin, tanggalLahir, asalDaerah, asalKelompok, asalDesa, nomorHp, instagram, fotoProfil, fotoEvent, statusMubaligh, pendidikanTerakhir, statusPernikahan, pekerjaan, anakKe, jumlahSaudara, dapukanKelompok, dapukanDesa, dapukanDaerah, kondisiIbu, kondisiAyah, statusJamaahIbu, statusJamaahAyah, daerahSambung, desaSambung, kelompokSambung")
@@ -29,6 +31,7 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
   }
   if (jenisKelamin) query = query.eq("jenisKelamin", jenisKelamin);
   if (asalDaerah) query = query.eq("asalDaerah", asalDaerah);
+  if (daerahSambung) query = query.eq("daerahSambung", daerahSambung);
 
   const [{ data: profiles }, { data: daerahList }, { data: desaList }, { data: kelompokList }, { data: activeEvents }] =
     await Promise.all([
@@ -153,10 +156,12 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
             <form className="relative">
               <input type="hidden" name="jenisKelamin" value={jenisKelamin} />
               <input type="hidden" name="asalDaerah" value={asalDaerah} />
+              <input type="hidden" name="daerahSambung" value={daerahSambung} />
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input name="q" placeholder="Cari nama..." defaultValue={q} className="pl-9 h-9 w-48" />
             </form>
             <DaerahFilter daerahList={daerahList || []} />
+            <DaerahSambungFilter daerahList={daerahList || []} />
             <GenderFilter />
           </div>
         </CardHeader>
@@ -174,6 +179,8 @@ export default async function AdminMembersPage({ searchParams }: MembersPageProp
     </div>
   );
 }
+
+
 
 
 

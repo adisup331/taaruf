@@ -12,6 +12,8 @@ export default function MemberRegisterPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/dashboard";
+  // Akun baru: lengkapi biodata + pilih event dulu. Kalau datang dari scan QR (/e/...), langsung ke event.
+  const afterSignup = next.startsWith("/e/") ? next : `/register-profile?next=${encodeURIComponent(next)}`;
   const supabase = createClient();
 
   const [loading, setLoading] = useState(false);
@@ -46,11 +48,11 @@ export default function MemberRegisterPage() {
       if (loginError) {
         // Jika auto login gagal, arahkan ke login manual
         setTimeout(() => {
-          router.push(`/login?username=${encodeURIComponent(username)}&next=${encodeURIComponent(next)}`);
+          router.push(`/login?username=${encodeURIComponent(username)}&next=${encodeURIComponent(afterSignup)}`);
         }, 1200);
       } else {
-        // Berhasil login -> langsung ke dashboard/next
-        router.push(next);
+        // Berhasil login -> lengkapi biodata & pilih event (atau langsung ke event hasil scan)
+        router.push(afterSignup);
         router.refresh();
       }
     } else {

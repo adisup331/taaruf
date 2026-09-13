@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -35,23 +35,38 @@ function LoginForm() {
     setLoading(true)
     setError("")
 
-    // Username (tanpa @) diubah jadi email sintetik member.local
-    const email = identifier.includes("@")
-      ? identifier.trim()
-      : `${identifier.trim().toLowerCase()}@member.local`
+    // Username (tanpa @) bisa berupa member (@member.local) atau
+    // pengurus event (@event-staff.local). Coba kedua domain.
+    const raw = identifier.trim()
+    const candidates = raw.includes("@")
+      ? [raw]
+      : [
+          `${raw.toLowerCase()}@member.local`,
+          `${raw.toLowerCase()}@event-staff.local`,
+        ]
 
-    const { data, error: loginError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    let data: Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>["data"] | null = null
+    let email = candidates[0]
 
-    if (loginError || !data.user) {
+    for (const candidate of candidates) {
+      const res = await supabase.auth.signInWithPassword({
+        email: candidate,
+        password,
+      })
+      if (res.data?.user && !res.error) {
+        data = res.data
+        email = candidate
+        break
+      }
+    }
+
+    if (!data?.user) {
       setError("Username/Email atau Password salah.")
       setLoading(false)
       return
     }
 
-    // Cek role untuk routing — ambil dari DB
+    // Cek role untuk routing â€” ambil dari DB
     const { data: dbUser } = await supabase
       .from("User")
       .select("role")
@@ -69,6 +84,8 @@ function LoginForm() {
       router.push("/admin/dashboard")
     } else if (role === "PHOTOGRAPHER") {
       router.push("/admin/events/photography")
+    } else if (role === "EVENT_STAFF") {
+      router.push("/pengurus")
     } else {
       router.push(next || "/dashboard")
     }
@@ -139,3 +156,6 @@ export default function LoginPage() {
     </Suspense>
   )
 }
+
+
+

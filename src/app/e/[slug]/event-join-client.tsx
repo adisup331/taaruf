@@ -13,6 +13,8 @@ import { CascadingWilayah } from "@/components/member/CascadingWilayah";
 interface Props {
   event: any;
   hasCompleteProfile: boolean;
+  profileName: string;
+  confirmJoin: (prev: ActionResult, fd: FormData) => Promise<ActionResult>;
   claimNumber: (prev: ActionResult, fd: FormData) => Promise<ActionResult>;
   registerNew: (prev: ActionResult, fd: FormData) => Promise<ActionResult>;
   daerahList: { id: string; nama: string }[];
@@ -20,7 +22,7 @@ interface Props {
   kelompokList: { id: string; nama: string }[];
 }
 
-type Mode = "choose" | "has_number" | "no_number";
+type Mode = "confirm" | "choose" | "has_number" | "no_number";
 
 const STEPS = [
   { title: "Data Pribadi", desc: "Nama, tanggal lahir, gender" },
@@ -36,8 +38,9 @@ const Sel = ({ name, children, ...props }: any) => (
   </select>
 );
 
-export function EventJoinClient({ event, hasCompleteProfile, claimNumber, registerNew, daerahList, desaList, kelompokList }: Props) {
-  const [mode, setMode] = useState<Mode>("choose");
+export function EventJoinClient({ event, hasCompleteProfile, profileName, confirmJoin, claimNumber, registerNew, daerahList, desaList, kelompokList }: Props) {
+  // Sudah login + profil lengkap -> cukup konfirmasi ikut event
+  const [mode, setMode] = useState<Mode>(hasCompleteProfile ? "confirm" : "choose");
   const [regStep, setRegStep] = useState(0);
   const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
@@ -104,6 +107,34 @@ export function EventJoinClient({ event, hasCompleteProfile, claimNumber, regist
     <div className="flex min-h-screen items-center justify-center bg-emerald-50 p-4">
       <div className="w-full max-w-md rounded-3xl bg-white p-6 sm:p-8 shadow-2xl">
 
+        {/* === CONFIRM MODE (profil sudah lengkap) === */}
+        {mode === "confirm" && (
+          <div className="space-y-6 text-center">
+            <div className="flex justify-center">
+              <div className="rounded-full bg-emerald-100 p-4"><Ticket className="h-12 w-12 text-emerald-600" /></div>
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">{event.title}</h1>
+              <p className="mt-2 text-sm text-gray-500">
+                {profileName ? <>Assalamu&apos;alaikum, <span className="font-bold text-gray-700">{profileName}</span>. </> : null}
+                Apakah kamu mengikuti event ini?
+              </p>
+            </div>
+            <EventMeta event={event} />
+            <ActionForm action={confirmJoin} className="space-y-3">
+              <SubmitButton pendingText="Memproses..." className="h-12 w-full rounded-xl bg-emerald-600 font-bold hover:bg-emerald-700">
+                <CheckCircle2 className="mr-2 h-5 w-5" /> Ya, Saya Ikut Event Ini
+              </SubmitButton>
+            </ActionForm>
+            <div className="space-y-2">
+              <button type="button" onClick={() => setMode("has_number")} className="text-xs font-bold text-emerald-700 hover:underline">
+                Sudah punya nomor peserta dari panitia?
+              </button>
+              <a href="/dashboard" className="block text-xs font-bold text-gray-400 hover:text-gray-600">Tidak, kembali ke dashboard</a>
+            </div>
+          </div>
+        )}
+
         {/* === CHOOSE MODE === */}
         {mode === "choose" && (
           <div className="space-y-6 text-center">
@@ -143,7 +174,7 @@ export function EventJoinClient({ event, hasCompleteProfile, claimNumber, regist
         {/* === HAS NUMBER === */}
         {mode === "has_number" && (
           <div className="space-y-6 text-center">
-            <button type="button" onClick={() => setMode("choose")} className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-700">
+            <button type="button" onClick={() => setMode(hasCompleteProfile ? "confirm" : "choose")} className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-700">
               <ArrowLeft className="h-4 w-4" /> Kembali
             </button>
             <div className="flex justify-center">
