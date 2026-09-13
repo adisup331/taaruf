@@ -138,12 +138,21 @@ function LoginForm() {
            </Button>
         </form>
 
-        <p className="text-xs text-gray-500">
-          Belum punya akun & tidak punya Gmail?{" "}
-          <Link href={`/register${next ? `?next=${encodeURIComponent(next)}` : ""}`} className="font-bold text-emerald-700">
-            Daftar manual
-          </Link>
-        </p>
+        <div className="space-y-3 rounded-2xl border-2 border-dashed border-emerald-200 bg-emerald-50 p-4">
+          <p className="text-sm font-bold text-emerald-800">Belum punya akun?</p>
+          <p className="text-xs text-gray-500">
+            Silakan daftar dulu. Punya Gmail? Cukup tekan <span className="font-semibold">Masuk dengan Google</span> di atas.
+          </p>
+          <Button
+            asChild
+            variant="outline"
+            className="h-11 w-full rounded-xl border-2 border-emerald-600 bg-white font-bold text-emerald-700 hover:bg-emerald-600 hover:text-white"
+          >
+            <Link href={`/register${next ? `?next=${encodeURIComponent(next)}` : ""}`}>
+              Daftar Akun Baru
+            </Link>
+          </Button>
+        </div>
       </div>
     </div>
   )
