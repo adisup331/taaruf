@@ -117,6 +117,15 @@ function LoginForm() {
               <UserPlus className="h-6 w-6" /> DAFTAR DI SINI
             </Link>
           </Button>
+          <p className="text-xs font-bold uppercase tracking-widest text-amber-700">atau</p>
+          <Button
+            type="button"
+            onClick={handleGoogleLogin}
+            className="h-12 w-full rounded-xl border-2 border-amber-300 bg-white font-bold text-gray-700 hover:bg-amber-100 flex gap-2"
+          >
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="Google" />
+            Daftar dengan Google
+          </Button>
         </div>
 
         <div className="relative">
@@ -170,7 +179,10 @@ function LoginForm() {
           <Link href={registerHref} className="font-bold text-amber-600 underline">
             Daftar di sini
           </Link>
-          {" "}· Punya Gmail? Tekan <span className="font-semibold">Masuk dengan Google</span>, akun dibuat otomatis.
+          {" "}atau{" "}
+          <button type="button" onClick={handleGoogleLogin} className="font-bold text-amber-600 underline">
+            pakai Google
+          </button>
         </p>
       </div>
     </div>
