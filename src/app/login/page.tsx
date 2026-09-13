@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+import { UserPlus } from "lucide-react"
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,7 @@ function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const next = searchParams.get("next") || ""
+  const registerHref = `/register${next ? `?next=${encodeURIComponent(next)}` : ""}`
 
   const [identifier, setIdentifier] = useState(searchParams.get("username") || "")
   const [password, setPassword] = useState("")
@@ -97,6 +99,31 @@ function LoginForm() {
       <div className="w-full max-w-sm bg-white p-8 rounded-3xl shadow-xl text-center space-y-6">
         <h1 className="text-3xl font-bold text-emerald-800">Taaruf Syar'i</h1>
 
+        {/* Pengunjung baru: tombol daftar dibuat paling menonjol & di paling atas */}
+        <div className="space-y-3 rounded-2xl bg-amber-50 border-2 border-amber-300 p-4">
+          <div>
+            <p className="text-base font-black text-amber-900">Belum punya akun?</p>
+            <p className="text-xs text-amber-800 mt-1">
+              {next.startsWith("/e/")
+                ? "Daftar dulu, setelah itu kamu langsung masuk ke event."
+                : "Baru pertama kali? Buat akun dulu, gratis & cepat."}
+            </p>
+          </div>
+          <Button
+            asChild
+            className="h-14 w-full rounded-xl bg-amber-500 text-lg font-black text-white shadow-lg shadow-amber-200 hover:bg-amber-600"
+          >
+            <Link href={registerHref} className="flex items-center justify-center gap-2">
+              <UserPlus className="h-6 w-6" /> DAFTAR DI SINI
+            </Link>
+          </Button>
+        </div>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div>
+          <div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-gray-400">Sudah punya akun? Masuk</span></div>
+        </div>
+
         <div className="space-y-4">
            <p className="text-sm font-semibold text-gray-400 uppercase tracking-widest">Login Member</p>
            <Button
@@ -138,21 +165,13 @@ function LoginForm() {
            </Button>
         </form>
 
-        <div className="space-y-3 rounded-2xl border-2 border-dashed border-emerald-200 bg-emerald-50 p-4">
-          <p className="text-sm font-bold text-emerald-800">Belum punya akun?</p>
-          <p className="text-xs text-gray-500">
-            Silakan daftar dulu. Punya Gmail? Cukup tekan <span className="font-semibold">Masuk dengan Google</span> di atas.
-          </p>
-          <Button
-            asChild
-            variant="outline"
-            className="h-11 w-full rounded-xl border-2 border-emerald-600 bg-white font-bold text-emerald-700 hover:bg-emerald-600 hover:text-white"
-          >
-            <Link href={`/register${next ? `?next=${encodeURIComponent(next)}` : ""}`}>
-              Daftar Akun Baru
-            </Link>
-          </Button>
-        </div>
+        <p className="text-xs text-gray-500">
+          Belum punya akun?{" "}
+          <Link href={registerHref} className="font-bold text-amber-600 underline">
+            Daftar di sini
+          </Link>
+          {" "}· Punya Gmail? Tekan <span className="font-semibold">Masuk dengan Google</span>, akun dibuat otomatis.
+        </p>
       </div>
     </div>
   )

@@ -65,9 +65,9 @@ export default function MemberRegisterPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-emerald-50 p-4">
       <div className="w-full max-w-sm space-y-6 rounded-3xl bg-white p-8 text-center shadow-xl">
         <div>
-          <h1 className="text-2xl font-bold text-emerald-800">Daftar Akun Member</h1>
+          <h1 className="text-2xl font-bold text-emerald-800">Buat Akun Baru</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Tidak punya Gmail? Daftar manual pakai username & password.
+            Isi nama, buat username & password bebas. Simpan baik-baik untuk login berikutnya.
           </p>
         </div>
 
