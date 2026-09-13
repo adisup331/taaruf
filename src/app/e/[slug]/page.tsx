@@ -227,11 +227,10 @@ export default async function EventJoinPage({ params }: { params: { slug: string
     };
 
     const { data: existing } = await supabase.from("Profile").select("id").eq("userId", me.id).maybeSingle();
-    if (existing) {
-      await supabase.from("Profile").update(payload).eq("userId", me.id);
-    } else {
-      await supabase.from("Profile").insert({ userId: me.id, ...payload, instagram: "-" });
-    }
+    const { error: profileErr } = existing
+      ? await supabase.from("Profile").update(payload).eq("userId", me.id)
+      : await supabase.from("Profile").insert({ userId: me.id, ...payload });
+    if (profileErr) return { ok: false, message: `Gagal menyimpan biodata: ${profileErr.message}` };
 
     // Create EventAttendee with auto-assigned number
     const joined = await joinEventVerified(supabase, event.id, me.id);

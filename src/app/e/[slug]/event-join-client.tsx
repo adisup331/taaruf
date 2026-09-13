@@ -9,6 +9,8 @@ import { SubmitButton } from "@/components/admin-panel/submit-button";
 import { type ActionResult } from "@/lib/action-result";
 import { createClient } from "@/lib/supabase/client";
 import { CascadingWilayah } from "@/components/member/CascadingWilayah";
+import { toast } from "sonner";
+import { compressImage, findEmptyRequired, photoFileName } from "@/lib/register-form";
 
 interface Props {
   event: any;
@@ -46,6 +48,7 @@ export function EventJoinClient({ event, hasCompleteProfile, profileName, confir
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [fotoUrl, setFotoUrl] = useState<string | null>(null);
+  const [loadingText, setLoadingText] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
   const supabase = createClient();
 
@@ -53,16 +56,33 @@ export function EventJoinClient({ event, hasCompleteProfile, profileName, confir
     const f = e.target.files?.[0];
     if (!f) return;
     setFotoFile(f);
+    setFotoUrl(null); // foto diganti -> upload ulang
     const reader = new FileReader();
     reader.onload = (ev) => setFotoPreview(ev.target?.result as string);
     reader.readAsDataURL(f);
   }
 
-  function nextStep() {
-    if (regStep === STEPS.length - 1 && !fotoFile && !fotoUrl) {
-      alert("Foto profil wajib diupload.");
-      return;
+  const FOTO_STEP = STEPS.length - 1;
+
+  // Kembalikan false + toast kalau ada field wajib kosong / foto belum ada
+  function validate(onlyStep?: number) {
+    const empty = formRef.current && findEmptyRequired(formRef.current, onlyStep);
+    if (empty) {
+      setRegStep(empty.step);
+      toast.error(`${empty.label} wajib diisi`, { description: `Lengkapi di langkah "${STEPS[empty.step].title}".` });
+      setTimeout(() => empty.el.focus(), 50);
+      return false;
     }
+    if ((onlyStep === undefined || onlyStep === FOTO_STEP) && !fotoFile && !fotoUrl) {
+      setRegStep(FOTO_STEP);
+      toast.error("Foto profil wajib diupload");
+      return false;
+    }
+    return true;
+  }
+
+  function nextStep() {
+    if (!validate(regStep)) return;
     if (regStep < STEPS.length - 1) setRegStep(regStep + 1);
   }
   function prevStep() { if (regStep > 0) setRegStep(regStep - 1); }
@@ -70,34 +90,43 @@ export function EventJoinClient({ event, hasCompleteProfile, profileName, confir
   async function handleRegisterSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (regStep < STEPS.length - 1) { nextStep(); return; }
-    if (!fotoFile && !fotoUrl) { alert("Foto profil wajib diupload."); return; }
+    if (!validate()) return;
 
     setUploading(true);
     try {
       let uploadedUrl = fotoUrl;
       if (fotoFile && !fotoUrl) {
+        setLoadingText("Mengupload foto...");
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error("Sesi habis");
-        const form = formRef.current!;
-        const fd = new FormData(form);
-        const nama = (fd.get("namaLengkap") as string) || "user";
-        const safeName = nama.toLowerCase().replace(/[^a-z0-9]/g, "-");
-        const ext = fotoFile.name.split(".").pop();
-        const fileName = `${safeName}-${Date.now()}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("pnkb").upload(fileName, fotoFile);
-        if (upErr) throw upErr;
+        if (!user) throw new Error("Sesi login habis. Silakan login ulang.");
+        const nama = (new FormData(formRef.current!).get("namaLengkap") as string) || "user";
+        const photo = await compressImage(fotoFile);
+        const fileName = photoFileName(nama, photo);
+        const { error: upErr } = await supabase.storage
+          .from("pnkb")
+          .upload(fileName, photo, { contentType: photo.type || "image/jpeg" });
+        if (upErr) throw new Error(`Gagal upload foto: ${upErr.message}`);
         const { data: pubData } = supabase.storage.from("pnkb").getPublicUrl(fileName);
         uploadedUrl = pubData.publicUrl;
-        setFotoUrl(uploadedUrl);
+        setFotoUrl(uploadedUrl); // simpan, supaya kalau gagal simpan data tidak upload ulang
       }
 
+      setLoadingText("Menyimpan data & mengambil nomor...");
       const fd = new FormData(formRef.current!);
       fd.set("fotoProfilUrl", uploadedUrl || "");
-      await registerNew({ ok: false, message: "" }, fd);
+      const res = await registerNew({ ok: false, message: "" }, fd);
+      if (!res?.ok) throw new Error(res?.message || "Gagal mendaftar. Coba lagi.");
+
+      setLoadingText("Berhasil! Memuat nomor peserta...");
+      toast.success(res.message || "Berhasil terdaftar!");
     } catch (err: any) {
-      alert(err.message || "Gagal mendaftar. Coba lagi.");
-    } finally {
+      console.error(err);
+      const offline = typeof navigator !== "undefined" && !navigator.onLine;
+      toast.error("Gagal mendaftar", {
+        description: offline ? "Koneksi internet terputus. Cek sinyal lalu coba lagi." : err?.message || "Terjadi kesalahan. Coba lagi.",
+      });
       setUploading(false);
+      setLoadingText("");
     }
   }
 
@@ -105,6 +134,17 @@ export function EventJoinClient({ event, hasCompleteProfile, profileName, confir
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-emerald-50 p-4">
+      {uploading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-6">
+          <div className="w-full max-w-xs rounded-3xl bg-white p-8 text-center shadow-2xl space-y-4">
+            <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
+            <div>
+              <p className="font-black text-gray-900">{loadingText || "Menyimpan..."}</p>
+              <p className="text-xs text-gray-500 mt-1">Jangan tutup atau kembali dari halaman ini.</p>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="w-full max-w-md rounded-3xl bg-white p-6 sm:p-8 shadow-2xl">
 
         {/* === CONFIRM MODE (profil sudah lengkap) === */}
@@ -219,9 +259,9 @@ export function EventJoinClient({ event, hasCompleteProfile, profileName, confir
               <p className="text-xs text-gray-500">{STEPS[regStep].desc}</p>
             </div>
 
-            <form ref={formRef} onSubmit={handleRegisterSubmit}>
+            <form ref={formRef} onSubmit={handleRegisterSubmit} noValidate>
               {/* Step 1: Data Pribadi */}
-              <div className={regStep === 0 ? "space-y-3" : "hidden"}>
+              <div data-step={0} className={regStep === 0 ? "space-y-3" : "hidden"}>
                 <div>
                   <label className="text-xs font-bold text-gray-500 uppercase">Nama Lengkap <span className="text-red-500">*</span></label>
                   <Input name="namaLengkap" required placeholder="Nama sesuai biodata" />
@@ -259,7 +299,7 @@ export function EventJoinClient({ event, hasCompleteProfile, profileName, confir
               </div>
 
               {/* Step 2: Asal & Wilayah */}
-              <div className={regStep === 1 ? "space-y-3" : "hidden"}>
+              <div data-step={1} className={regStep === 1 ? "space-y-3" : "hidden"}>
                 <CascadingWilayah
                   prefix="asal"
                   labelPrefix="Asal"
@@ -281,7 +321,7 @@ export function EventJoinClient({ event, hasCompleteProfile, profileName, confir
               </div>
 
               {/* Step 3: Daerah Sambung */}
-              <div className={regStep === 2 ? "space-y-3" : "hidden"}>
+              <div data-step={2} className={regStep === 2 ? "space-y-3" : "hidden"}>
                 <CascadingWilayah
                   prefix="sambung"
                   labelPrefix="Sambung"
@@ -295,7 +335,7 @@ export function EventJoinClient({ event, hasCompleteProfile, profileName, confir
               </div>
 
               {/* Step 4: Keluarga */}
-              <div className={regStep === 3 ? "space-y-3" : "hidden"}>
+              <div data-step={3} className={regStep === 3 ? "space-y-3" : "hidden"}>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-bold text-gray-500 uppercase">Anak Ke</label>
@@ -319,7 +359,7 @@ export function EventJoinClient({ event, hasCompleteProfile, profileName, confir
               </div>
 
               {/* Step 5: Foto Profil (WAJIB) */}
-              <div className={regStep === 4 ? "space-y-4" : "hidden"}>
+              <div data-step={4} className={regStep === 4 ? "space-y-4" : "hidden"}>
                 <div className="flex flex-col items-center gap-4">
                   <div
                     className="relative h-52 w-52 rounded-3xl overflow-hidden bg-gray-100 border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-400 transition-colors flex items-center justify-center"

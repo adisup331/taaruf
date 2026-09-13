@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user) return new NextResponse("Unauthorized", { status: 401 })
+    if (!user) return NextResponse.json({ message: "Sesi login habis. Silakan login ulang." }, { status: 401 })
 
     const body = await request.json()
     const {
@@ -36,6 +36,14 @@ export async function POST(request: Request) {
       eventId
     } = body
 
+    const tanggal = new Date(tanggalLahir)
+    if (!namaLengkap?.trim() || !jenisKelamin || !tanggalLahir || isNaN(tanggal.getTime())) {
+      return NextResponse.json(
+        { message: "Nama, tanggal lahir, dan jenis kelamin wajib diisi dengan benar." },
+        { status: 400 }
+      )
+    }
+
     // 1. Get or Create User via Supabase Client
     const { data: dbUser, error: dbError } = await supabase
       .from('User')
@@ -46,16 +54,17 @@ export async function POST(request: Request) {
     let userId = dbUser?.id;
 
     if (!dbUser) {
-       const { data: newUser } = await supabase
+       const { data: newUser, error: newUserErr } = await supabase
         .from('User')
         .insert({
           id: user.id,
           email: user.email,
-          name: user.user_metadata.full_name || '',
+          name: user.user_metadata?.full_name || '',
           role: 'MEMBER'
         })
         .select()
         .single()
+       if (newUserErr || !newUser) throw new Error(newUserErr?.message || "Gagal membuat akun")
        userId = newUser.id;
     }
 
@@ -70,7 +79,7 @@ export async function POST(request: Request) {
 
     const payload = {
       namaLengkap,
-      tanggalLahir: new Date(tanggalLahir).toISOString(),
+      tanggalLahir: tanggal.toISOString(),
       jenisKelamin,
       asalDaerah,
       asalKelompok,
@@ -126,8 +135,11 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(profileData)
-  } catch (error) {
+  } catch (error: any) {
     console.error(error)
-    return new NextResponse("Internal Server Error", { status: 500 })
+    return NextResponse.json(
+      { message: `Gagal menyimpan data: ${error?.message || "kesalahan server"}` },
+      { status: 500 }
+    )
   }
 }

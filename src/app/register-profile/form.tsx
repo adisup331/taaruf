@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/supabase/client"
 import { ArrowLeft, ArrowRight, Camera, CheckCircle2, Calendar, MapPin, Loader2 } from "lucide-react"
+import { toast } from "sonner"
+import { compressImage, findEmptyRequired, photoFileName } from "@/lib/register-form"
 
 type ActiveEvent = {
   id: string
@@ -41,6 +43,7 @@ export default function RegisterProfileForm({ activeEvents }: Props) {
 
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [loadingText, setLoadingText] = useState("")
   const [selectedEventId, setSelectedEventId] = useState<string>("")
   const [fotoPreview, setFotoPreview] = useState<string | null>(null)
   const [fotoFile, setFotoFile] = useState<File | null>(null)
@@ -54,11 +57,27 @@ export default function RegisterProfileForm({ activeEvents }: Props) {
     reader.readAsDataURL(f)
   }
 
-  function goNext() {
-    if (step === 3 && !fotoFile && !fotoPreview) {
-      alert("Foto profil wajib diupload.")
-      return
+  const FOTO_STEP = 3
+
+  // Kembalikan false + tampilkan toast kalau ada field wajib kosong / foto belum ada
+  function validate(onlyStep?: number) {
+    const empty = formRef.current && findEmptyRequired(formRef.current, onlyStep)
+    if (empty) {
+      setStep(empty.step)
+      toast.error(`${empty.label} wajib diisi`, { description: `Lengkapi di langkah "${STEPS[empty.step].title}".` })
+      setTimeout(() => empty.el.focus(), 50)
+      return false
     }
+    if ((onlyStep === undefined || onlyStep === FOTO_STEP) && !fotoFile) {
+      setStep(FOTO_STEP)
+      toast.error("Foto profil wajib diupload")
+      return false
+    }
+    return true
+  }
+
+  function goNext() {
+    if (!validate(step)) return
     if (step < STEPS.length - 1) setStep(step + 1)
   }
 
@@ -69,6 +88,7 @@ export default function RegisterProfileForm({ activeEvents }: Props) {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (step < STEPS.length - 1) { goNext(); return }
+    if (!validate()) return
 
     setLoading(true)
     try {
@@ -76,18 +96,20 @@ export default function RegisterProfileForm({ activeEvents }: Props) {
 
       let fotoProfilUrl = null
       if (fotoFile) {
+        setLoadingText("Mengupload foto...")
         const { data: { user } } = await supabase.auth.getUser()
-        if (!user) throw new Error("Not authenticated")
-        const namaLengkap = formData.get("namaLengkap") as string
-        const safeName = namaLengkap.toLowerCase().replace(/[^a-z0-9]/g, "-")
-        const fileExt = fotoFile.name.split(".").pop()
-        const fileName = `${safeName}-${Date.now()}.${fileExt}`
-        const { error: uploadError } = await supabase.storage.from("pnkb").upload(fileName, fotoFile)
-        if (uploadError) throw uploadError
+        if (!user) throw new Error("Sesi login habis. Silakan login ulang.")
+        const photo = await compressImage(fotoFile)
+        const fileName = photoFileName(formData.get("namaLengkap") as string, photo)
+        const { error: uploadError } = await supabase.storage
+          .from("pnkb")
+          .upload(fileName, photo, { contentType: photo.type || "image/jpeg" })
+        if (uploadError) throw new Error(`Gagal upload foto: ${uploadError.message}`)
         const { data: publicUrlData } = supabase.storage.from("pnkb").getPublicUrl(fileName)
         fotoProfilUrl = publicUrlData.publicUrl
       }
 
+      setLoadingText("Menyimpan data...")
       const response = await fetch("/api/profile/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -118,14 +140,23 @@ export default function RegisterProfileForm({ activeEvents }: Props) {
         }),
       })
 
-      if (!response.ok) throw new Error("Failed to save profile")
+      if (!response.ok) {
+        const body = await response.json().catch(() => null)
+        throw new Error(body?.message || `Gagal menyimpan (kode ${response.status}). Coba lagi.`)
+      }
+
+      setLoadingText("Berhasil! Mengalihkan...")
+      toast.success("Data berhasil disimpan")
       router.push(next)
       router.refresh()
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
-      alert("Terjadi kesalahan. Pastikan semua data terisi.")
-    } finally {
+      const offline = typeof navigator !== "undefined" && !navigator.onLine
+      toast.error("Gagal menyimpan", {
+        description: offline ? "Koneksi internet terputus. Cek sinyal lalu tekan Simpan lagi." : err?.message || "Terjadi kesalahan. Coba lagi.",
+      })
       setLoading(false)
+      setLoadingText("")
     }
   }
 
@@ -133,6 +164,17 @@ export default function RegisterProfileForm({ activeEvents }: Props) {
 
   return (
     <div className="min-h-screen bg-emerald-50 flex flex-col justify-center py-8 px-4">
+      {loading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-6">
+          <div className="w-full max-w-xs rounded-3xl bg-white p-8 text-center shadow-2xl space-y-4">
+            <Loader2 className="h-12 w-12 animate-spin text-emerald-600 mx-auto" />
+            <div>
+              <p className="font-black text-gray-900">{loadingText || "Menyimpan..."}</p>
+              <p className="text-xs text-gray-500 mt-1">Jangan tutup atau kembali dari halaman ini.</p>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="w-full max-w-lg mx-auto">
         {/* Step indicator */}
         <div className="mb-6">
@@ -164,10 +206,10 @@ export default function RegisterProfileForm({ activeEvents }: Props) {
             <p className="text-sm text-gray-500">{STEPS[step].desc}</p>
           </div>
 
-          <form ref={formRef} onSubmit={handleSubmit}>
+          <form ref={formRef} onSubmit={handleSubmit} noValidate>
             {/* All fields rendered but only current step visible */}
             {/* Step 1: Data Pribadi */}
-            <div className={step === 0 ? "space-y-4" : "hidden"}>
+            <div data-step={0} className={step === 0 ? "space-y-4" : "hidden"}>
               <div>
                 <label className="text-xs font-bold text-gray-500 uppercase">Nama Lengkap</label>
                 <Input name="namaLengkap" required placeholder="Nama sesuai biodata" />
@@ -214,7 +256,7 @@ export default function RegisterProfileForm({ activeEvents }: Props) {
             </div>
 
             {/* Step 2: Asal & Wilayah */}
-            <div className={step === 1 ? "space-y-4" : "hidden"}>
+            <div data-step={1} className={step === 1 ? "space-y-4" : "hidden"}>
               <div>
                 <label className="text-xs font-bold text-gray-500 uppercase">Asal Daerah</label>
                 <Input name="asalDaerah" required placeholder="Kota asal" />
@@ -254,7 +296,7 @@ export default function RegisterProfileForm({ activeEvents }: Props) {
             </div>
 
             {/* Step 3: Keluarga */}
-            <div className={step === 2 ? "space-y-4" : "hidden"}>
+            <div data-step={2} className={step === 2 ? "space-y-4" : "hidden"}>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-bold text-gray-500 uppercase">Anak Ke</label>
@@ -292,7 +334,7 @@ export default function RegisterProfileForm({ activeEvents }: Props) {
             </div>
 
             {/* Step 4: Foto Profil */}
-            <div className={step === 3 ? "space-y-4" : "hidden"}>
+            <div data-step={3} className={step === 3 ? "space-y-4" : "hidden"}>
               <div className="flex flex-col items-center gap-4">
                 <div
                   className="relative h-48 w-48 rounded-3xl overflow-hidden bg-gray-100 border-2 border-dashed border-gray-300 cursor-pointer hover:border-emerald-400 transition-colors flex items-center justify-center"
@@ -320,7 +362,7 @@ export default function RegisterProfileForm({ activeEvents }: Props) {
             </div>
 
             {/* Step 5: Daftar Event */}
-            <div className={step === 4 ? "space-y-4" : "hidden"}>
+            <div data-step={4} className={step === 4 ? "space-y-4" : "hidden"}>
               {activeEvents.length === 0 ? (
                 <div className="text-center py-8">
                   <Calendar className="h-12 w-12 text-gray-300 mx-auto mb-3" />
